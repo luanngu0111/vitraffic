@@ -34,11 +34,15 @@ public class AlarmUploadService extends BroadcastReceiver {
 			}
 			File[] files = file.listFiles();
 			ServerUtil ftp = ServerUtil.createServer();
-			for (File f : files) {
-				if (f.isDirectory())
-					continue;
-				ftp.Upload(f);
+			boolean status = ftp.serverConnect("b3_16668287", "123456789", 21);
+			if (status) {
+				Log.d("upload", "Connection Success");
+				for (File f : files) {
+					if (f.isDirectory())
+						continue;
+					ftp.Upload(f);
 
+				}
 			}
 			return null;
 		}

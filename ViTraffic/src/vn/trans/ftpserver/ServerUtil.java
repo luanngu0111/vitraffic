@@ -38,7 +38,6 @@ public class ServerUtil {
 			return instance;
 		} else {
 			instance = new ServerUtil();
-			instance.serverConnect("b3_16668287", "123456789", 21);
 			return instance;
 		}
 	}

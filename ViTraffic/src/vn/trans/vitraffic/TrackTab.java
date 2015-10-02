@@ -20,16 +20,23 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
+import vn.trans.track.AlarmUploadService;
 import vn.trans.track.RequestTrack;
 import vn.trans.track.ResponseTrack;
+import vn.trans.traff.AlarmDownloadService;
 import vn.trans.utils.IConstants;
 
 public class TrackTab extends FragmentActivity
@@ -51,7 +58,7 @@ public class TrackTab extends FragmentActivity
 	private double mDistance = 0.0;
 	boolean mRequestingLocationUpdates = true;
 	private String mPlace = "";
-
+	private PendingIntent mAlarmIntent;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -59,6 +66,8 @@ public class TrackTab extends FragmentActivity
 		initilizeMap();
 		buildGoogleApiClient();
 		createLocationRequest();
+		Intent launchIntent = new Intent(this, AlarmUploadService.class);
+		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, 0);
 		// updateValuesFromBundle(savedInstanceState);
 
 	}
@@ -165,6 +174,9 @@ public class TrackTab extends FragmentActivity
 		super.onResume();
 		// registerReceiver(receiver, new
 		// IntentFilter("vn.trans.trackingtraff"));
+		AlarmManager man = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+		man.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), IConstants.INTERVAL,
+				mAlarmIntent);
 		if (mGoogleApiClient.isConnected() == false) {
 			mGoogleApiClient.connect();
 		}

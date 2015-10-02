@@ -52,11 +52,16 @@
 
         <receiver android:name="vn.trans.traff.AlarmDownloadService" >
         </receiver>
-        <service android:name="vn.trans.track.Geolocation"></service>
+
+        <service android:name="vn.trans.track.Geolocation" >
+        </service>
+
+        <receiver android:name="vn.trans.track.AlarmUploadService" >
+        </receiver>
 
         <activity
-        android:name=".TrackerTab"
-        android:label="@string/title_activity_tracker_tab" >
+            android:name=".TrackerTab"
+            android:label="@string/title_activity_tracker_tab" >
         </activity>
     </application>
 
