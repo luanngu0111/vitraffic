@@ -190,13 +190,14 @@ public class Location extends JSONObj {
 			e.printStackTrace();
 		}
 
-		final ServerUtil ftpserver = ServerUtil.createServer();
+		ServerUtil ftpserver = ServerUtil.createServer();
 		new Thread(new Runnable() {
 
 			@Override
 			public void run() {
 				boolean status = false;
-				status = ftpserver.serverConnect("b3_16668287", "123456789", 21);
+				ServerUtil ftpserver = ServerUtil.createServer();
+				status = ftpserver.serverConnect(IConstants.USERNAME, IConstants.PASSWORD, IConstants.PORT);
 				if (status == true) {
 					Log.d("server", "Connection Success");
 					ftpserver.Upload(file);
@@ -229,12 +230,13 @@ public class Location extends JSONObj {
 					public void run() {
 						// TODO Auto-generated method stub
 						boolean status = false;
-						status = ftpserver.serverConnect("b3_16668287", "123456789", 21);
+						ServerUtil ftpserver = ServerUtil.createServer();
+						status = ftpserver.serverConnect(IConstants.USERNAME, IConstants.PASSWORD, IConstants.PORT);
 						if (status == true) {
-							Log.d("server", "Connection Success");
+							Log.d("server", "Connection Success CSV");
 							ftpserver.Upload(csv);
 						} else {
-							Log.d("server", "Connection failed");
+							Log.d("server", "Connection failed CSV");
 						}
 					}
 				}).start();
@@ -259,8 +261,6 @@ public class Location extends JSONObj {
 		conv2Obj(jsonStr);
 
 	}
-
-	
 
 	@Override
 	public JSONObject conv2JsonObj() {

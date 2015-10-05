@@ -22,7 +22,7 @@ public class MainActivity extends TabActivity {
 
 		// Tab for tracking
 		TabSpec trackSpec = tabHost.newTabSpec("track");
-		Intent trackIntent = new Intent(this, TrackTab.class);
+		Intent trackIntent = new Intent(this, TrackerTab.class);
 		trackSpec.setIndicator("Tracking");
 		trackSpec.setContent(trackIntent);
 
@@ -35,7 +35,6 @@ public class MainActivity extends TabActivity {
 		// Add all tabspec to tabhost
 		tabHost.addTab(trackSpec);
 		tabHost.addTab(traffSpec);
-		ServerUtil ftpserver = ServerUtil.createServer();
 		
 
 	}
@@ -58,15 +57,15 @@ public class MainActivity extends TabActivity {
 	protected void onStop() {
 		// TODO Auto-generated method stub
 		
-		new Thread(new Runnable() {
-			
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				ServerUtil ftp = ServerUtil.createServer();
-				ftp.serverDisconnect();
-			}
-		}).start();
+//		new Thread(new Runnable() {
+//			
+//			@Override
+//			public void run() {
+//				// TODO Auto-generated method stub
+//				ServerUtil ftp = ServerUtil.createServer();
+//				ftp.serverDisconnect();
+//			}
+//		}).start();
 		
 		super.onStop();
 	}

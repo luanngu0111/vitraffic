@@ -76,6 +76,7 @@ public class TrackTab extends FragmentActivity
 	protected void onStart() {
 		// TODO Auto-generated method stub
 		mGoogleApiClient.connect();
+		init = true;
 		super.onStart();
 	}
 
@@ -172,10 +173,8 @@ public class TrackTab extends FragmentActivity
 	@Override
 	protected void onResume() {
 		super.onResume();
-		// registerReceiver(receiver, new
-		// IntentFilter("vn.trans.trackingtraff"));
 		AlarmManager man = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-		man.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), IConstants.INTERVAL,
+		man.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), IConstants.ALARM_INTERVAL,
 				mAlarmIntent);
 		if (mGoogleApiClient.isConnected() == false) {
 			mGoogleApiClient.connect();
@@ -235,13 +234,9 @@ public class TrackTab extends FragmentActivity
 	@Override
 	public void onLocationChanged(Location location) {
 		// TODO Auto-generated method stub
-		Location tmp = mPrevLocation;
 		if (mPrevLocation == null) {
 			mPrevLocation = location;
-			init = true;
-		} else {
-			init = false;
-		}
+		} 
 		if (mStartLocation == null) {
 			mStartLocation = location;
 		}
@@ -262,12 +257,7 @@ public class TrackTab extends FragmentActivity
 		rq.RoadRequest(new LatLng[] { strt, end });
 		LatLng[] paths = rp.getPathsRp();
 		List<LatLng> tmp = new ArrayList<LatLng>();
-		if (init == false)
-			tmp.add(prev);
-
 		if (paths != null) {
-			tmp.addAll(Arrays.asList(paths));
-			paths = tmp.toArray(new LatLng[tmp.size()]);
 			Log.v("path", String.valueOf(paths.length));
 			strt = paths[0];
 			for (int i = 1; i < paths.length; i++) {

@@ -27,19 +27,21 @@ import vn.trans.utils.IConstants;
 
 public class ServerUtil {
 	private static ServerUtil instance;
-	private static FTPClient mFTP;
+	private FTPClient mFTP;
 
 	private ServerUtil() {
 		this.mFTP = new FTPClient();
 	}
 
 	public static ServerUtil createServer() {
-		if (instance != null) {
-			return instance;
-		} else {
-			instance = new ServerUtil();
-			return instance;
-		}
+//		if (instance != null) {
+//			return instance;
+//		} else {
+//			instance = new ServerUtil();
+//			return instance;
+//		}
+		instance = new ServerUtil();
+		return instance;
 	}
 
 	public boolean serverConnect(String username, String password, int port) {

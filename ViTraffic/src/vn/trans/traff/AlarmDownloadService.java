@@ -4,14 +4,18 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.util.Log;
 import vn.trans.vitraffic.TraffTab.DownloadTask;
 
 public class AlarmDownloadService extends BroadcastReceiver {
+	DownloadTask dl;
 
 	@Override
 	public void onReceive(Context arg0, Intent arg1) {
 		// TODO Auto-generated method stub
-		DownloadTask dl = new DownloadTask();
+
+		dl = new DownloadTask();
 		dl.execute((Void) null);
 	}
+
 }

@@ -41,6 +41,7 @@ public class TraffTab extends FragmentActivity {
 	private static GoogleMap map;
 	boolean onCurrentTab = false;
 	private PendingIntent mAlarmIntent;
+	private AlarmManager alarmMan;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +49,8 @@ public class TraffTab extends FragmentActivity {
 		setContentView(R.layout.activity_traff_tab);
 		initilizeMap();
 		Intent launchIntent = new Intent(this, AlarmDownloadService.class);
-		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, 0);
+		launchIntent.putExtra("cancel", "no");
+		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 
 	@Override
@@ -89,19 +91,25 @@ public class TraffTab extends FragmentActivity {
 	@Override
 	protected void onResume() {
 		// TODO Auto-generated method stub
-		AlarmManager man = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-		man.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 2000, IConstants.ALARM_INTERVAL,
-				mAlarmIntent);
+		alarmMan = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+		alarmMan.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 2000,
+				IConstants.ALARM_INTERVAL, mAlarmIntent);
 		super.onResume();
+	}
+
+	@Override
+	protected void onStop() {
+		// TODO Auto-generated method stup
+		Intent cancelIntent = new Intent(this, AlarmDownloadService.class);
+		cancelIntent.putExtra("cancel", "cancel");
+		mAlarmIntent = PendingIntent.getBroadcast(this, 0, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+		alarmMan.cancel(mAlarmIntent);
+		super.onStop();
 	}
 
 	@Override
 	protected void onPause() {
 		// TODO Auto-generated method stub
-		// AlarmManager man = (AlarmManager)
-		// getSystemService(Context.ALARM_SERVICE);
-		// man.cancel(mAlarmIntent);
-
 		super.onPause();
 	}
 
@@ -109,7 +117,9 @@ public class TraffTab extends FragmentActivity {
 		@Override
 		protected void onPreExecute() {
 			// TODO Auto-generated method stub
-			map.clear();
+//			if (map != null)
+//				map.clear();
+			Log.i("Tag", "Start Download ...");
 			super.onPreExecute();
 		}
 
@@ -125,7 +135,7 @@ public class TraffTab extends FragmentActivity {
 			// TODO Auto-generated method stub
 			boolean status = false;
 			ServerUtil server = ServerUtil.createServer();
-			status = server.serverConnect("b3_16668287", "123456789", 21);
+			status = server.serverConnect(IConstants.USERNAME, IConstants.PASSWORD, IConstants.PORT);
 			if (status == true) {
 				FTPFile[] files = server.getAllFile(false);
 				if (files == null)
@@ -146,12 +156,19 @@ public class TraffTab extends FragmentActivity {
 				}
 				Log.d("server", "Connection success files " + files.length);
 			} else {
-				Log.d("server", "Connection failed");
+				Log.d("server", "Connection failed files");
 			}
 			return null;
 		}
+		@Override
+		protected void onCancelled() {
+			// TODO Auto-generated method stub
+			Log.i("Tag", "Cancel Download ...");
+			super.onCancelled();
+		}
 
 	}
+
 	public static void DrawTrafficRoad(Road road) {
 		int color = 0;
 		LatLngBounds bounds = map.getProjection().getVisibleRegion().latLngBounds;
