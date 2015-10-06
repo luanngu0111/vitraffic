@@ -53,17 +53,12 @@
         <receiver android:name="vn.trans.traff.AlarmDownloadService" >
         </receiver>
 
-        <service android:name="vn.trans.track.Geolocation" >
-        </service>
+<!--         <service android:name="vn.trans.track.Geolocation" > -->
+<!--         </service> -->
 
-        <receiver android:name="vn.trans.track.AlarmUploadService" >
-        </receiver>
+<!--         <receiver android:name="vn.trans.track.AlarmUploadService" > -->
+<!--         </receiver> -->
 
-        <receiver android:name="vn.trans.track.LocationReceiver">
-            <intent-filter>
-                <action android:name="android.intent.action.LOCALE_CHANGED"/>
-            </intent-filter>
-        </receiver>
         <activity
             android:name=".TrackerTab"
             android:label="@string/title_activity_tracker_tab" >

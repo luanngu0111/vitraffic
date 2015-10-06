@@ -205,7 +205,7 @@ public class TrackerTab extends FragmentActivity {
 
 	@SuppressLint("NewApi")
 	private void initilizeMap() {
-		map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
+		map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.maptracking)).getMap();
 		Log.i("Tag", "map init");
 		// draw line b/w intial and final location.
 		map.setMyLocationEnabled(true);

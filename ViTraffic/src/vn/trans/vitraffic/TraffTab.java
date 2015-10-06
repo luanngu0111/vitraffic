@@ -49,8 +49,7 @@ public class TraffTab extends FragmentActivity {
 		setContentView(R.layout.activity_traff_tab);
 		initilizeMap();
 		Intent launchIntent = new Intent(this, AlarmDownloadService.class);
-		launchIntent.putExtra("cancel", "no");
-		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, 0);
 	}
 
 	@Override
@@ -74,7 +73,7 @@ public class TraffTab extends FragmentActivity {
 
 	private void initilizeMap() {
 		// if (map == null) {
-		map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
+		map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.maptraffic)).getMap();
 		Log.i("Tag", "map");
 		map.setMyLocationEnabled(true);
 		map.getUiSettings().setZoomControlsEnabled(true);
@@ -117,8 +116,8 @@ public class TraffTab extends FragmentActivity {
 		@Override
 		protected void onPreExecute() {
 			// TODO Auto-generated method stub
-//			if (map != null)
-//				map.clear();
+			if (map != null)
+				map.clear();
 			Log.i("Tag", "Start Download ...");
 			super.onPreExecute();
 		}
@@ -128,6 +127,12 @@ public class TraffTab extends FragmentActivity {
 			// TODO Auto-generated method stub
 			DrawTrafficRoad(values[0]);
 			super.onProgressUpdate(values);
+		}
+		@Override
+		protected void onPostExecute(Void result) {
+			// TODO Auto-generated method stub
+			Log.i("Tag", "Download finish...");
+			super.onPostExecute(result);
 		}
 
 		@Override
@@ -186,7 +191,8 @@ public class TraffTab extends FragmentActivity {
 				Log.v("draw", start.latitude + " " + start.longitude);
 				for (int i = 1; i < paths.size(); i++) {
 					LatLng end = paths.get(i);
-					if (bounds.contains(end)) {
+					//if (bounds.contains(end)) 
+					{
 						Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(8).color(color));
 						line.setVisible(true);
 					}

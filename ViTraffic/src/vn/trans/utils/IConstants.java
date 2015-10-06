@@ -7,7 +7,7 @@ public interface IConstants {
 	public static long ALARM_INTERVAL = 900000;
 	public static int INTERVAL = 4000; // time to request location mms
 	public static int FAST_INTV = 4000; // fast time to request location mms
-	public static String KEY_API_SERV = "AIzaSyA8TwGjtYR_j67HOHI6lbV97w5zyOUYYdU";
+	public static String KEY_API_SERV = "AIzaSyAjg-AyQtRQTb472UPe9TrLQU-ADlzWYKw";
 	public static String RQ_ROAD = "https://roads.googleapis.com/v1";
 	public static String RQ_DIST = "https://maps.googleapis.com/maps/api/distancematrix";
 	public static int[] COLORS = new int[] { 0x50FF0000, 0x50FD0E0A, 0x50F92A1E, 0x50F54632, 0x50F16246, 0x50E18B6B,

@@ -59,6 +59,7 @@ public class TrackTab extends FragmentActivity
 	boolean mRequestingLocationUpdates = true;
 	private String mPlace = "";
 	private PendingIntent mAlarmIntent;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -215,7 +216,7 @@ public class TrackTab extends FragmentActivity
 
 	private void initilizeMap() {
 		// if (map == null) {
-		map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
+		map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.maptracking)).getMap();
 		Log.i("Tag", "map");
 		// draw line b/w intial and final location.
 		map.setMyLocationEnabled(true);
@@ -236,7 +237,7 @@ public class TrackTab extends FragmentActivity
 		// TODO Auto-generated method stub
 		if (mPrevLocation == null) {
 			mPrevLocation = location;
-		} 
+		}
 		if (mStartLocation == null) {
 			mStartLocation = location;
 		}
@@ -256,7 +257,6 @@ public class TrackTab extends FragmentActivity
 		LatLng end = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
 		rq.RoadRequest(new LatLng[] { strt, end });
 		LatLng[] paths = rp.getPathsRp();
-		List<LatLng> tmp = new ArrayList<LatLng>();
 		if (paths != null) {
 			Log.v("path", String.valueOf(paths.length));
 			strt = paths[0];
@@ -268,6 +268,7 @@ public class TrackTab extends FragmentActivity
 				strt = end;
 			}
 
+			end = paths[paths.length - 1];
 			mPrevLocation = mCurrentLocation;
 			mPrevLocation.setLatitude(end.latitude);
 			mPrevLocation.setLongitude(end.longitude);

@@ -22,7 +22,7 @@ public class MainActivity extends TabActivity {
 
 		// Tab for tracking
 		TabSpec trackSpec = tabHost.newTabSpec("track");
-		Intent trackIntent = new Intent(this, TrackerTab.class);
+		Intent trackIntent = new Intent(this, TrackTab.class);
 		trackSpec.setIndicator("Tracking");
 		trackSpec.setContent(trackIntent);
 
