@@ -128,6 +128,7 @@ public class TraffTab extends FragmentActivity {
 			DrawTrafficRoad(values[0]);
 			super.onProgressUpdate(values);
 		}
+
 		@Override
 		protected void onPostExecute(Void result) {
 			// TODO Auto-generated method stub
@@ -142,13 +143,18 @@ public class TraffTab extends FragmentActivity {
 			ServerUtil server = ServerUtil.createServer();
 			status = server.serverConnect(IConstants.USERNAME, IConstants.PASSWORD, IConstants.PORT);
 			if (status == true) {
+				/*
+				 * Gia tri trong getAllFile = False la lay tat ca 
+				 * Neu = True la lay theo khoang thoi gian duoc dinh truoc trong file
+				 * IConstants
+				 */
 				FTPFile[] files = server.getAllFile(false);
 				if (files == null)
 					return null;
 				for (FTPFile f : files) {
 					if (f.isDirectory())
 						continue;
-					Log.v("file", f.getTimestamp().getTimeInMillis() + " " + (new Date()).getTime());
+					Log.v("file", ServerUtil.converDate2String(f.getTimestamp()) + "  " + f.getName());
 					String json = server.Download(f.getName());
 					if (json != null) {
 						Location loc = new Location();
@@ -165,6 +171,7 @@ public class TraffTab extends FragmentActivity {
 			}
 			return null;
 		}
+
 		@Override
 		protected void onCancelled() {
 			// TODO Auto-generated method stub
@@ -191,12 +198,12 @@ public class TraffTab extends FragmentActivity {
 				Log.v("draw", start.latitude + " " + start.longitude);
 				for (int i = 1; i < paths.size(); i++) {
 					LatLng end = paths.get(i);
-					//if (bounds.contains(end)) 
-					{
-						Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(8).color(color));
+					Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(8).color(color));
+					if (bounds.contains(end)) {
 						line.setVisible(true);
+						Log.v("draw", end.latitude + " " + end.longitude);
 					}
-					Log.v("draw", end.latitude + " " + end.longitude);
+
 					start = end;
 				}
 				Log.v("draw", "finish line");

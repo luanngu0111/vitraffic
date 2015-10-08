@@ -1,17 +1,39 @@
-<!-- <RelativeLayout  -->
-<!--     xmlns:tools="http://schemas.android.com/tools" -->
-<!--     android:layout_width="match_parent" -->
-<!--     android:layout_height="match_parent" -->
-<!--     android:paddingBottom="@dimen/activity_vertical_margin" -->
-<!--     android:paddingLeft="@dimen/activity_horizontal_margin" -->
-<!--     android:paddingRight="@dimen/activity_horizontal_margin" -->
-<!--     android:paddingTop="@dimen/activity_vertical_margin" -->
-<!--     tools:context="vn.trans.trackingtraff.TrackTab" > -->
-
-    <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" 
+    >
+    <fragment
         android:id="@+id/maptracking"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         class="com.google.android.gms.maps.SupportMapFragment" />
 
-<!-- </RelativeLayout> -->
+    <Button
+        android:id="@+id/bnStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="20dp"
+        android:layout_marginLeft="30dp"
+        android:text="Start" />
+
+    <Button
+        android:id="@+id/bnStop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/bnStart"
+        android:layout_alignBottom="@+id/bnStart"
+        android:layout_toRightOf="@+id/bnStart"
+        android:text="Stop" />
+
+    <Button
+        android:id="@+id/bnDetail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/bnStop"
+        android:layout_alignBottom="@+id/bnStop"
+        android:layout_toRightOf="@+id/bnStop"
+        android:text="Detail" />
+
+</RelativeLayout>

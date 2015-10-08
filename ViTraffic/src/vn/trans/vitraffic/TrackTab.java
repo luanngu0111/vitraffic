@@ -1,10 +1,8 @@
 package vn.trans.vitraffic;
 
 import java.text.DateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -32,11 +30,12 @@ import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 import vn.trans.track.AlarmUploadService;
 import vn.trans.track.RequestTrack;
 import vn.trans.track.ResponseTrack;
-import vn.trans.traff.AlarmDownloadService;
 import vn.trans.utils.IConstants;
 
 public class TrackTab extends FragmentActivity
@@ -56,9 +55,10 @@ public class TrackTab extends FragmentActivity
 	String mLastUpdateTime;
 	GoogleApiClient mGoogleApiClient;
 	private double mDistance = 0.0;
-	boolean mRequestingLocationUpdates = true;
+	boolean mRequestingLocationUpdates = false;
 	private String mPlace = "";
 	private PendingIntent mAlarmIntent;
+	private Button bnStart, bnStop, bnDetail;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +69,57 @@ public class TrackTab extends FragmentActivity
 		createLocationRequest();
 		Intent launchIntent = new Intent(this, AlarmUploadService.class);
 		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, 0);
+		bnStart = (Button) findViewById(R.id.bnStart);
+		bnStop = (Button) findViewById(R.id.bnStop);
+		bnDetail = (Button) findViewById(R.id.bnDetail);
+		bnStart.setOnClickListener(new View.OnClickListener() {
+
+			@Override
+			public void onClick(View arg0) {
+				Toast.makeText(getApplicationContext(), "Start Tracking ...", Toast.LENGTH_LONG).show();
+				bnStop.setEnabled(true);
+				bnStart.setEnabled(false);
+				mRequestingLocationUpdates = true;
+				startLocationUpdates();
+			}
+		});
+
+		bnStop.setOnClickListener(new View.OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				Toast.makeText(getApplicationContext(), "Stop Tracking !", Toast.LENGTH_LONG).show();
+				bnStop.setEnabled(false);
+				bnStart.setEnabled(true);
+				mRequestingLocationUpdates = false;
+				stopLocationUpdates();
+			}
+		});
+
+		final AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+		bnDetail.setOnClickListener(new View.OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				if (mRequestingLocationUpdates) {
+					getDetailInfo();
+				} else {
+					long totalTime = mCurrentLocation.getTime() - mStartLocation.getTime();
+					long hour = totalTime / 3600000;
+					totalTime = totalTime % 3600000;
+					long minute = totalTime / 60000;
+					totalTime = totalTime % 60000;
+					long second = totalTime / 1000;
+					String stime = hour + ":" + minute + ":" + second;
+					dialog.setTitle("Thông Tin Hành Trình");
+					dialog.setMessage(
+							"Tổng quãng đường: " + Math.round(mDistance * 1000) / 1000.0 + "(km) \nTổng thời gian: "
+									+ stime + "\nVận tốc: " + Math.round(mCurrSpeed * 1000) / 1000.0 + "(km/h)");
+					AlertDialog alert = dialog.create();
+					alert.show();
+				}
+			}
+		});
 		// updateValuesFromBundle(savedInstanceState);
 
 	}
@@ -80,6 +131,7 @@ public class TrackTab extends FragmentActivity
 		init = true;
 		super.onStart();
 	}
+
 
 	@Override
 	protected void onRestoreInstanceState(Bundle savedInstanceState) {
@@ -126,6 +178,34 @@ public class TrackTab extends FragmentActivity
 		return super.onCreateOptionsMenu(menu);
 	}
 
+	/**
+	 * Lay thong tin hanh trinh
+	 */
+	private void getDetailInfo() {
+		RequestTrack rq = new RequestTrack(this);
+		LatLng src = new LatLng(mPrevLocation.getLatitude(), mPrevLocation.getLongitude());
+		LatLng dest = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+		rq.DistanceRequest(src, dest);
+		ResponseTrack rp = ResponseTrack.createObj();
+		mDistance += rp.getDistanceRp();
+		long totalTime = mCurrentLocation.getTime() - mStartLocation.getTime();
+		double hours = totalTime / 3600000.0;
+		long hour = totalTime / 3600000;
+		totalTime = totalTime % 3600000;
+		long minute = totalTime / 60000;
+		totalTime = totalTime % 60000;
+		long second = totalTime / 1000;
+		mDistance = mStartLocation.distanceTo(mCurrentLocation) / 1000.0;
+		mCurrSpeed = mDistance / hours;
+		String stime = hour + ":" + minute + ":" + second;
+		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+		dialog.setTitle("Thông Tin Hành Trình");
+		dialog.setMessage("Tổng quãng đường: " + Math.round(mDistance * 1000) / 1000.0 + "(km) \nTổng thời gian: "
+				+ stime + "\nVận tốc: " + Math.round(mCurrSpeed * 1000) / 1000.0 + "(km/h)");
+		AlertDialog alert = dialog.create();
+		alert.show();
+	}
+
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// Handle action bar item clicks here. The action bar will
@@ -134,49 +214,29 @@ public class TrackTab extends FragmentActivity
 		int id = item.getItemId();
 		if (id == R.id.action_settings) {
 			return true;
-		} else if (id == R.id.action_detail) {
-			/*
-			 * Tong hanh trinh Van toc Tong thoi gian
-			 */
-			RequestTrack rq = new RequestTrack(this);
-			LatLng src = new LatLng(mPrevLocation.getLatitude(), mPrevLocation.getLongitude());
-			LatLng dest = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
-			rq.DistanceRequest(src, dest);
-			ResponseTrack rp = ResponseTrack.createObj();
-			mDistance += rp.getDistanceRp();
-			long totalTime = mCurrentLocation.getTime() - mStartLocation.getTime();
-			double hours = totalTime / 3600000.0;
-			long hour = totalTime / 3600000;
-			totalTime = totalTime % 3600000;
-			long minute = totalTime / 60000;
-			totalTime = totalTime % 60000;
-			long second = totalTime / 1000;
-			mDistance = mStartLocation.distanceTo(mCurrentLocation) / 1000.0;
-			mCurrSpeed = mDistance / hours;
-			String stime = hour + ":" + minute + ":" + second;
-			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-			dialog.setTitle("Thông Tin Hành Trình");
-			dialog.setMessage("Tổng quãng đường: " + Math.round(mDistance * 1000) / 1000.0 + "(km) \nTổng thời gian: "
-					+ stime + "\nVận tốc: " + Math.round(mCurrSpeed * 1000) / 1000.0 + "(km/h)");
-			AlertDialog alert = dialog.create();
-			alert.show();
-
-		} else if (id == R.id.action_start) {
-			mRequestingLocationUpdates = true;
-			startLocationUpdates();
-		} else if (id == R.id.action_stop) {
-			mRequestingLocationUpdates = false;
-			stopLocationUpdates();
 		}
+		// } else if (id == R.id.action_detail) {
+		// /*
+		// * Tong hanh trinh Van toc Tong thoi gian
+		// */
+		//
+		// } else if (id == R.id.action_start) {
+		//
+		// } else if (id == R.id.action_stop) {
+		//
+		// }
 		return super.onOptionsItemSelected(item);
 	}
 
+	/* (non-Javadoc)
+	 * @see android.support.v4.app.FragmentActivity#onResume()
+	 */
 	@Override
 	protected void onResume() {
 		super.onResume();
 		AlarmManager man = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 		man.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), IConstants.ALARM_INTERVAL,
-				mAlarmIntent);
+				mAlarmIntent); //tu dong upload thong tin toa do nguoi dung len server theo chu ky dinh truoc.
 		if (mGoogleApiClient.isConnected() == false) {
 			mGoogleApiClient.connect();
 		}
@@ -250,6 +310,9 @@ public class TrackTab extends FragmentActivity
 
 	}
 
+	/** Ve tracking len ban do.
+	 * @param prev: thong tin toa do vi tri truoc do.
+	 */
 	private void updateUI(LatLng prev) {
 		RequestTrack rq = new RequestTrack(this);
 		ResponseTrack rp = ResponseTrack.createObj();
@@ -276,6 +339,10 @@ public class TrackTab extends FragmentActivity
 		}
 	}
 
+	/** Ghi vao file
+	 * @param paths: Danh sach toa do duoc sinh ra tu 2 toa do Dau-Cuoi.
+	 * @param placeid
+	 */
 	private void WriteToFile(LatLng[] paths, String placeid) {
 		vn.trans.entities.Location loc = new vn.trans.entities.Location();
 		if (paths != null) {

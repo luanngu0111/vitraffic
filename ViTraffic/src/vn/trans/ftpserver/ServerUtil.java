@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.SocketException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -34,12 +35,12 @@ public class ServerUtil {
 	}
 
 	public static ServerUtil createServer() {
-//		if (instance != null) {
-//			return instance;
-//		} else {
-//			instance = new ServerUtil();
-//			return instance;
-//		}
+		// if (instance != null) {
+		// return instance;
+		// } else {
+		// instance = new ServerUtil();
+		// return instance;
+		// }
 		instance = new ServerUtil();
 		return instance;
 	}
@@ -113,7 +114,6 @@ public class ServerUtil {
 				@Override
 				public boolean accept(FTPFile file) {
 					// TODO Auto-generated method stub
-					Date now = new Date();
 					Calendar cal = Calendar.getInstance();
 					Calendar timestamp = file.getTimestamp();
 					long during = cal.getTimeInMillis() - timestamp.getTimeInMillis();
@@ -123,7 +123,6 @@ public class ServerUtil {
 					return false;
 				}
 			};
-			// files = mFTP.listFiles(null, filter);
 			if (isfilter == true) {
 				files = mFTP.listFiles(".", filter);
 			} else {
@@ -253,6 +252,11 @@ public class ServerUtil {
 		}
 		return rs;
 
+	}
+
+	public static String converDate2String(Calendar date) {
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+		return sdf.format(date.getTime());
 	}
 
 }

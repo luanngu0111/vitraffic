@@ -235,25 +235,27 @@ public class TrackerTab extends FragmentActivity {
 		int id = item.getItemId();
 		if (id == R.id.action_settings) {
 			return true;
-		} else if (id == R.id.action_detail) {
-			/*
-			 * Tong hanh trinh Van toc Tong thoi gian
-			 */
-			RequestTrack rq = new RequestTrack(this);
-
-			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-			dialog.setTitle("Thông Tin Hành Trình");
-			dialog.setMessage("Tổng quãng đường: " + Math.round(gps.getDistance() * 1000) / 1000.0
-					+ "(km) \nTổng thời gian: " + gps.getTriptime() + "\nVận tốc: "
-					+ Math.round(gps.getSpeed() * 1000) / 1000.0 + "(km/h)");
-			AlertDialog alert = dialog.create();
-			alert.show();
-
-		} else if (id == R.id.action_start) {
-
-		} else if (id == R.id.action_stop) {
-			stopService(loc_intent);
 		}
+		// } else if (id == R.id.action_detail) {
+		// /*
+		// * Tong hanh trinh Van toc Tong thoi gian
+		// */
+		// RequestTrack rq = new RequestTrack(this);
+		//
+		// AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+		// dialog.setTitle("Thông Tin Hành Trình");
+		// dialog.setMessage("Tổng quãng đường: " + Math.round(gps.getDistance()
+		// * 1000) / 1000.0
+		// + "(km) \nTổng thời gian: " + gps.getTriptime() + "\nVận tốc: "
+		// + Math.round(gps.getSpeed() * 1000) / 1000.0 + "(km/h)");
+		// AlertDialog alert = dialog.create();
+		// alert.show();
+		//
+		// } else if (id == R.id.action_start) {
+		//
+		// } else if (id == R.id.action_stop) {
+		// stopService(loc_intent);
+		// }
 		return super.onOptionsItemSelected(item);
 	}
 
