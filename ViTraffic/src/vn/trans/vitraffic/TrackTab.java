@@ -182,12 +182,6 @@ public class TrackTab extends FragmentActivity
 	 * Lay thong tin hanh trinh
 	 */
 	private void getDetailInfo() {
-		RequestTrack rq = new RequestTrack(this);
-		LatLng src = new LatLng(mPrevLocation.getLatitude(), mPrevLocation.getLongitude());
-		LatLng dest = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
-		rq.DistanceRequest(src, dest);
-		ResponseTrack rp = ResponseTrack.createObj();
-		mDistance += rp.getDistanceRp();
 		long totalTime = mCurrentLocation.getTime() - mStartLocation.getTime();
 		double hours = totalTime / 3600000.0;
 		long hour = totalTime / 3600000;
@@ -292,6 +286,9 @@ public class TrackTab extends FragmentActivity
 		// }
 	}
 
+	/*
+	 * Ham lang nghe su thay doi vi tri.
+	 */
 	@Override
 	public void onLocationChanged(Location location) {
 		// TODO Auto-generated method stub
@@ -373,6 +370,7 @@ public class TrackTab extends FragmentActivity
 		}
 	}
 
+	//Dang ky gui request toa do vi tri cua user.
 	private void startLocationUpdates() {
 		// TODO Auto-generated method stub
 		LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
@@ -384,6 +382,9 @@ public class TrackTab extends FragmentActivity
 
 	}
 
+	/*
+	 * Luu tru du lieu hien tai khi ung dung tam ngung.
+	 */
 	@Override
 	public void onSaveInstanceState(Bundle savedInstanceState) {
 		savedInstanceState.putBoolean(REQUESTING_LOCATION_UPDATES_KEY, mRequestingLocationUpdates);

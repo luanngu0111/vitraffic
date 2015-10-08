@@ -161,12 +161,15 @@ public class Location extends JSONObj {
 
 	}
 
+	/**
+	 * Luu tru file duoi dang json.
+	 */
 	public void saveToFile() {
 		/*
 		 * format: <user_id>.json
 		 */
 		String stime = new SimpleDateFormat("dd_MM_yyyy_HH_mm_ss").format(time);
-		String proot = "/storage/sdcard0/vitraff";
+		String proot = IConstants.ROOT_PATH;
 		String csvroot = proot + "/csv";
 		File root = new File(proot);
 		File croot = new File(csvroot);
@@ -190,7 +193,7 @@ public class Location extends JSONObj {
 			e.printStackTrace();
 		}
 
-		ServerUtil ftpserver = ServerUtil.createServer();
+//		ServerUtil ftpserver = ServerUtil.createServer();
 		new Thread(new Runnable() {
 
 			@Override
@@ -206,7 +209,10 @@ public class Location extends JSONObj {
 				}
 			}
 		}).start();
-		// Save summary file in local;
+		
+		
+		
+		// Luu file tong hop csv 
 		if (arr_coord != null && arr_coord.size() > 0) {
 			try {
 				final File csv = new File(csvroot + "/" + user_id + ".csv");
@@ -262,6 +268,9 @@ public class Location extends JSONObj {
 
 	}
 
+	/* 
+	 * Chuyen doi tuong Location sang dinh dang JSON.
+	 */
 	@Override
 	public JSONObject conv2JsonObj() {
 		// TODO Auto-generated method stub
@@ -284,6 +293,9 @@ public class Location extends JSONObj {
 		return jo;
 	}
 
+	/* 
+	 * Chuyen chuoi json sang doi tuong Location.
+	 */
 	@Override
 	public Location conv2Obj(String json) {
 		// TODO Auto-generated method stub

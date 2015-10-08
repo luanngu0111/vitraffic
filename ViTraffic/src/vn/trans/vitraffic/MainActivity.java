@@ -56,17 +56,6 @@ public class MainActivity extends TabActivity {
 	@Override
 	protected void onStop() {
 		// TODO Auto-generated method stub
-		
-//		new Thread(new Runnable() {
-//			
-//			@Override
-//			public void run() {
-//				// TODO Auto-generated method stub
-//				ServerUtil ftp = ServerUtil.createServer();
-//				ftp.serverDisconnect();
-//			}
-//		}).start();
-		
 		super.onStop();
 	}
 	@Override

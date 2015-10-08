@@ -104,6 +104,10 @@ public class ServerUtil {
 
 	}
 
+	/** Ham thuc hien lay danh sach cac file tren server.
+	 * @param isfilter: kiem tra dieu kien loc. True la loc, False la lay tat ca.
+	 * @return
+	 */
 	public FTPFile[] getAllFile(boolean isfilter) {
 
 		FTPFile[] files;
@@ -183,22 +187,28 @@ public class ServerUtil {
 		return null;
 	}
 
+	/** Download file tu server ve dua tren ten file duoc cung cap.
+	 * @param filename
+	 * @return
+	 */
 	public String Download(String filename) {
 		if (filename.contains(".csv")) {
 			return null;
 		}
 		String rs = "";
-		String root = "/storage/sdcard0/vitraff";
+		String root = IConstants.ROOT_PATH;
 		String filepath = root + "/" + filename;
 		if (filename.contains(".csv")) {
 			String rootpath = root + "/csv";
 			File croot = new File(rootpath);
+			//Tao thu muc csv neu chua co
 			if (!croot.exists()) {
 				croot.mkdir();
 			}
 			filepath = rootpath + "/" + filename;
 		}
 
+		//Tao thu muc theo duong dan root neu chua co.
 		File froot = new File(root);
 		if (!froot.exists()) {
 			froot.mkdir();
@@ -208,7 +218,9 @@ public class ServerUtil {
 		try {
 			File file = new File(filepath);
 
-			if (!file.exists()) {
+			//File duoc tai ve neu chua co tren may. Neu co roi thi chi can doc lai.
+			if (!file.exists()) //File chua ton tai 
+			{
 				out = new FileOutputStream(file);
 				boolean result = mFTP.retrieveFile(filename, out);
 				out.close();
@@ -226,7 +238,7 @@ public class ServerUtil {
 				} else {
 					Log.d("download", "error");
 				}
-			} else {
+			} else { //File ton tai.
 				BufferedReader br = null;
 
 				String sCurrentLine;

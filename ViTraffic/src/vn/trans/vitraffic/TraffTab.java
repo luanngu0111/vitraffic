@@ -112,6 +112,10 @@ public class TraffTab extends FragmentActivity {
 		super.onPause();
 	}
 
+	/**
+	 * Lop nay dung de thuc hien Download file tu server o che do chay ngam.
+	 *
+	 */
 	public static class DownloadTask extends AsyncTask<Void, Road, Void> {
 		@Override
 		protected void onPreExecute() {
@@ -122,6 +126,9 @@ public class TraffTab extends FragmentActivity {
 			super.onPreExecute();
 		}
 
+		/* 
+		 * Moi khi tai ve mot file thi thuc hien ve traffic len ban do.
+		 */
 		@Override
 		protected void onProgressUpdate(Road... values) {
 			// TODO Auto-generated method stub
@@ -181,6 +188,9 @@ public class TraffTab extends FragmentActivity {
 
 	}
 
+	/** Thuc hien ve mot doan duong dua vao thong tin danh sach toa do va van toc.
+	 * @param road
+	 */
 	public static void DrawTrafficRoad(Road road) {
 		int color = 0;
 		LatLngBounds bounds = map.getProjection().getVisibleRegion().latLngBounds;
@@ -190,6 +200,8 @@ public class TraffTab extends FragmentActivity {
 			if (paths != null && paths.size() > 0) {
 				LatLng start = paths.get(0);
 				int speed = (int) road.getAvg_speed();
+				
+				//Xac dinh mau dua tren van toc.
 				if (speed > 20) {
 					color = IConstants.COLORS[IConstants.COLORS.length - 1];
 				} else {
@@ -199,7 +211,8 @@ public class TraffTab extends FragmentActivity {
 				for (int i = 1; i < paths.size(); i++) {
 					LatLng end = paths.get(i);
 					Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(8).color(color));
-					if (bounds.contains(end)) {
+					if (bounds.contains(end)) //Kiem tra toa do co nam trong vung ban do dang hien thi hay khong 
+					{
 						line.setVisible(true);
 						Log.v("draw", end.latitude + " " + end.longitude);
 					}
