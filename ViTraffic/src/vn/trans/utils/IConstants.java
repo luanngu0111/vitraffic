@@ -1,7 +1,7 @@
 package vn.trans.utils;
 
 public interface IConstants {
-	public static String FTP_SERVER = "ftp.byethost24.com";
+	public static String FTP_SERVER = "ftp.byethost12.com";
 	public static String FORMAT_DATE = "dd/MM/yyyy HH:mm:ss";
 	public static long REQUEST_TRAFF = 3600000+11*3600000;
 	public static long ALARM_INTERVAL = 900000;
@@ -15,11 +15,9 @@ public interface IConstants {
 	// 0x50D29480, 0x50BEA09C, 0x50AAACB8, 0x5096B8D4, 0x5082CAFF, 0x507ECEEF,
 	// 0x507AD2DF, 0x5076D6CF, 0x5072DABF,
 	// 0x506EDEAF, 0x506AE29F, 0x5066E68F, 0x5062EA7F, 0x505EEE6F, 0x505FE964 };
-	public static int[] COLORS = new int[] { 0x88811F1E, 0x888D1C1B, 0x889D1817, 0x88AD1413, 0x88BD100F, 0x88DA0301,
-			0x88DD1501, 0x88E12D01, 0x88E54501, 0x88E95D01, 0x88EB7A00, 0x88E67F04, 0x88E18408, 0x88DC890C, 0x88D78E10,
-			0x88D29314, 0x88CD9818, 0x88C89D1C, 0x88C3A220, 0x88BEA724, 0x8889D84A };
+	public static int[] COLORS = new int[] { 0x80FF0000,0x80FF0F00,0x80FF2300,0x80FF3700,0x80FF4B00,0x80FF6600,0x80E17827,0x80B9905B,0x8091A88F,0x8069C0C3,0x8037D9FF,0x8031DDE5,0x802BE1CB,0x8025E5B1,0x801FE997,0x8019ED7D,0x8013F163,0x800DF549,0x8007F92F,0x8001FD15,0x8000FF00};
 	public static String ROOT_PATH = "/storage/sdcard0/vitraff";
-	public static String USERNAME = "b24_16715952";
+	public static String USERNAME = "b12_16735066";
 	public static String PASSWORD = "123456789";
 	public static int PORT = 21;
 

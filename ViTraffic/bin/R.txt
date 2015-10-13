@@ -527,10 +527,11 @@ int drawable ic_plusone_standard_off_client 0x7f020060
 int drawable ic_plusone_tall_off_client 0x7f020061
 int drawable icon 0x7f020062
 int drawable iconnew 0x7f020063
-int drawable imgo 0x7f020064
-int drawable notification_template_icon_bg 0x7f020067
-int drawable powered_by_google_dark 0x7f020065
-int drawable powered_by_google_light 0x7f020066
+int drawable img_speed 0x7f020064
+int drawable img_speed2 0x7f020065
+int drawable notification_template_icon_bg 0x7f020068
+int drawable powered_by_google_dark 0x7f020066
+int drawable powered_by_google_light 0x7f020067
 int id action0 0x7f080073
 int id action_bar 0x7f08005c
 int id action_bar_activity_content 0x7f080004

@@ -24,6 +24,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
+import android.media.MediaCryptoException;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.app.FragmentActivity;
@@ -84,6 +85,7 @@ public class TrackTab extends FragmentActivity
 			}
 		});
 
+		bnStop.setEnabled(false);
 		bnStop.setOnClickListener(new View.OnClickListener() {
 
 			@Override
@@ -104,17 +106,8 @@ public class TrackTab extends FragmentActivity
 				if (mRequestingLocationUpdates) {
 					getDetailInfo();
 				} else {
-					long totalTime = mCurrentLocation.getTime() - mStartLocation.getTime();
-					long hour = totalTime / 3600000;
-					totalTime = totalTime % 3600000;
-					long minute = totalTime / 60000;
-					totalTime = totalTime % 60000;
-					long second = totalTime / 1000;
-					String stime = hour + ":" + minute + ":" + second;
 					dialog.setTitle("Thông Tin Hành Trình");
-					dialog.setMessage(
-							"Tổng quãng đường: " + Math.round(mDistance * 1000) / 1000.0 + "(km) \nTổng thời gian: "
-									+ stime + "\nVận tốc: " + Math.round(mCurrSpeed * 1000) / 1000.0 + "(km/h)");
+					dialog.setMessage("Vui lòng bật chế độ ghi hành trình !");
 					AlertDialog alert = dialog.create();
 					alert.show();
 				}
@@ -131,7 +124,6 @@ public class TrackTab extends FragmentActivity
 		init = true;
 		super.onStart();
 	}
-
 
 	@Override
 	protected void onRestoreInstanceState(Bundle savedInstanceState) {
@@ -189,7 +181,7 @@ public class TrackTab extends FragmentActivity
 		long minute = totalTime / 60000;
 		totalTime = totalTime % 60000;
 		long second = totalTime / 1000;
-		mDistance = mStartLocation.distanceTo(mCurrentLocation) / 1000.0;
+		mDistance = mCurrentLocation.distanceTo(mStartLocation) / 1000.0;
 		mCurrSpeed = mDistance / hours;
 		String stime = hour + ":" + minute + ":" + second;
 		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
@@ -209,20 +201,12 @@ public class TrackTab extends FragmentActivity
 		if (id == R.id.action_settings) {
 			return true;
 		}
-		// } else if (id == R.id.action_detail) {
-		// /*
-		// * Tong hanh trinh Van toc Tong thoi gian
-		// */
-		//
-		// } else if (id == R.id.action_start) {
-		//
-		// } else if (id == R.id.action_stop) {
-		//
-		// }
 		return super.onOptionsItemSelected(item);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see android.support.v4.app.FragmentActivity#onResume()
 	 */
 	@Override
@@ -230,7 +214,8 @@ public class TrackTab extends FragmentActivity
 		super.onResume();
 		AlarmManager man = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 		man.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), IConstants.ALARM_INTERVAL,
-				mAlarmIntent); //tu dong upload thong tin toa do nguoi dung len server theo chu ky dinh truoc.
+				mAlarmIntent); // tu dong upload thong tin toa do nguoi dung len
+								// server theo chu ky dinh truoc.
 		if (mGoogleApiClient.isConnected() == false) {
 			mGoogleApiClient.connect();
 		}
@@ -245,14 +230,13 @@ public class TrackTab extends FragmentActivity
 	}
 
 	@Override
-	protected void onStop() {
+	protected void onDestroy() {
 		// TODO Auto-generated method stub
 		stopLocationUpdates();
 		mRequestingLocationUpdates = false;
 		mPrevLocation = null;
 		mGoogleApiClient.disconnect();
-		super.onStop();
-
+		super.onDestroy();
 	}
 
 	protected void stopLocationUpdates() {
@@ -307,8 +291,11 @@ public class TrackTab extends FragmentActivity
 
 	}
 
-	/** Ve tracking len ban do.
-	 * @param prev: thong tin toa do vi tri truoc do.
+	/**
+	 * Ve tracking len ban do.
+	 * 
+	 * @param prev:
+	 *            thong tin toa do vi tri truoc do.
 	 */
 	private void updateUI(LatLng prev) {
 		RequestTrack rq = new RequestTrack(this);
@@ -336,20 +323,25 @@ public class TrackTab extends FragmentActivity
 		}
 	}
 
-	/** Ghi vao file
-	 * @param paths: Danh sach toa do duoc sinh ra tu 2 toa do Dau-Cuoi.
+	/**
+	 * Ghi vao file
+	 * 
+	 * @param paths:
+	 *            Danh sach toa do duoc sinh ra tu 2 toa do Dau-Cuoi.
 	 * @param placeid
 	 */
 	private void WriteToFile(LatLng[] paths, String placeid) {
 		vn.trans.entities.Location loc = new vn.trans.entities.Location();
+		LatLng curr = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
 		if (paths != null) {
 			loc.setArr_coord(Arrays.asList(paths));
+			// curr = paths[paths.length-1];
 		}
 		long totalTime = mCurrentLocation.getTime() - mStartLocation.getTime();
 		double hours = totalTime / 3600000.0;
 		double distance = mCurrentLocation.distanceTo(mStartLocation) / 1000.0;
 		loc.setSpeed(distance / hours);
-		loc.setCoord(new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude()));
+		loc.setCoord(curr);
 		loc.setUser_id(android.os.Build.SERIAL);
 		loc.setRoad_id(placeid);
 		loc.saveToFile();
@@ -370,7 +362,7 @@ public class TrackTab extends FragmentActivity
 		}
 	}
 
-	//Dang ky gui request toa do vi tri cua user.
+	// Dang ky gui request toa do vi tri cua user.
 	private void startLocationUpdates() {
 		// TODO Auto-generated method stub
 		LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
