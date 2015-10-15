@@ -8,9 +8,17 @@ import java.util.TimerTask;
 
 import org.apache.commons.net.ftp.FTPFile;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Polyline;
@@ -20,6 +28,7 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -37,19 +46,31 @@ import vn.trans.track.ResponseTrack;
 import vn.trans.traff.AlarmDownloadService;
 import vn.trans.utils.IConstants;
 
-public class TraffTab extends FragmentActivity {
+public class TraffTab extends FragmentActivity
+		implements ConnectionCallbacks, OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
 	private static GoogleMap map;
 	boolean onCurrentTab = false;
 	private PendingIntent mAlarmIntent;
 	private AlarmManager alarmMan;
+	GoogleApiClient mGoogleApiClient;
+	boolean mRequestingLocationUpdates = true;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_traff_tab);
+		mRequestingLocationUpdates = true;
 		initilizeMap();
+		buildGoogleApiClient();
+		createLocationRequest();
+
 		Intent launchIntent = new Intent(this, AlarmDownloadService.class);
 		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, 0);
+	}
+
+	protected synchronized void buildGoogleApiClient() {
+		mGoogleApiClient = new GoogleApiClient.Builder(this).addConnectionCallbacks(this)
+				.addOnConnectionFailedListener(this).addApi(LocationServices.API).build();
 	}
 
 	@Override
@@ -93,6 +114,12 @@ public class TraffTab extends FragmentActivity {
 		alarmMan = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 		alarmMan.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 2000,
 				IConstants.ALARM_INTERVAL, mAlarmIntent);
+		if (mGoogleApiClient.isConnected() == false) {
+			mGoogleApiClient.connect();
+		}
+		if (mGoogleApiClient.isConnected() && mRequestingLocationUpdates) {
+			startLocationUpdates();
+		}
 		super.onResume();
 	}
 
@@ -126,7 +153,7 @@ public class TraffTab extends FragmentActivity {
 			super.onPreExecute();
 		}
 
-		/* 
+		/*
 		 * Moi khi tai ve mot file thi thuc hien ve traffic len ban do.
 		 */
 		@Override
@@ -151,8 +178,8 @@ public class TraffTab extends FragmentActivity {
 			status = server.serverConnect(IConstants.USERNAME, IConstants.PASSWORD, IConstants.PORT);
 			if (status == true) {
 				/*
-				 * Gia tri trong getAllFile = False la lay tat ca 
-				 * Neu = True la lay theo khoang thoi gian duoc dinh truoc trong file
+				 * Gia tri trong getAllFile = False la lay tat ca Neu = True la
+				 * lay theo khoang thoi gian duoc dinh truoc trong file
 				 * IConstants
 				 */
 				FTPFile[] files = server.getAllFile(false);
@@ -188,7 +215,10 @@ public class TraffTab extends FragmentActivity {
 
 	}
 
-	/** Thuc hien ve mot doan duong dua vao thong tin danh sach toa do va van toc.
+	/**
+	 * Thuc hien ve mot doan duong dua vao thong tin danh sach toa do va van
+	 * toc.
+	 * 
 	 * @param road
 	 */
 	public static void DrawTrafficRoad(Road road) {
@@ -200,8 +230,8 @@ public class TraffTab extends FragmentActivity {
 			if (paths != null && paths.size() > 0) {
 				LatLng start = paths.get(0);
 				int speed = (int) road.getAvg_speed();
-				
-				//Xac dinh mau dua tren van toc.
+
+				// Xac dinh mau dua tren van toc.
 				if (speed > 20) {
 					color = IConstants.COLORS[IConstants.COLORS.length - 1];
 				} else {
@@ -211,7 +241,9 @@ public class TraffTab extends FragmentActivity {
 				for (int i = 1; i < paths.size(); i++) {
 					LatLng end = paths.get(i);
 					Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(8).color(color));
-					if (bounds.contains(end)) //Kiem tra toa do co nam trong vung ban do dang hien thi hay khong 
+					if (bounds.contains(end)) // Kiem tra toa do co nam trong
+												// vung ban do dang hien thi hay
+												// khong
 					{
 						line.setVisible(true);
 						Log.v("draw", end.latitude + " " + end.longitude);
@@ -251,5 +283,52 @@ public class TraffTab extends FragmentActivity {
 				}
 			}
 		}
+	}
+
+	LocationRequest mLocationRequest;
+
+	protected void createLocationRequest() {
+		mLocationRequest = new LocationRequest();
+		mLocationRequest.setInterval(IConstants.INTERVAL);
+		mLocationRequest.setFastestInterval(IConstants.FAST_INTV);
+		mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+	}
+
+	// Dang ky gui request toa do vi tri cua user.
+	private void startLocationUpdates() {
+		// TODO Auto-generated method stub
+		LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+	}
+
+	@Override
+	public void onLocationChanged(android.location.Location location) {
+		// TODO Auto-generated method stub
+		CameraPosition camPos = new CameraPosition.Builder()
+				.target(new LatLng(location.getLatitude(), location.getLongitude())).zoom(18)
+				.bearing(location.getBearing()).build();
+		CameraUpdate camUpd3 = CameraUpdateFactory.newCameraPosition(camPos);
+		map.animateCamera(camUpd3);
+
+	}
+
+	@Override
+	public void onConnectionFailed(ConnectionResult arg0) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onConnected(Bundle arg0) {
+		// TODO Auto-generated method stub
+		Log.d("connect", "Connected");
+		if (mRequestingLocationUpdates) {
+			startLocationUpdates();
+		}
+	}
+
+	@Override
+	public void onConnectionSuspended(int arg0) {
+		// TODO Auto-generated method stub
+
 	}
 }

@@ -11,9 +11,11 @@ import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListe
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -24,7 +26,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
-import android.media.MediaCryptoException;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.app.FragmentActivity;
@@ -56,7 +57,8 @@ public class TrackTab extends FragmentActivity
 	String mLastUpdateTime;
 	GoogleApiClient mGoogleApiClient;
 	private double mDistance = 0.0;
-	boolean mRequestingLocationUpdates = false;
+	boolean mRequestingLocationUpdates = true;
+	boolean mTracking = false;
 	private String mPlace = "";
 	private PendingIntent mAlarmIntent;
 	private Button bnStart, bnStop, bnDetail;
@@ -65,6 +67,7 @@ public class TrackTab extends FragmentActivity
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_track_tab);
+		mRequestingLocationUpdates = true;
 		initilizeMap();
 		buildGoogleApiClient();
 		createLocationRequest();
@@ -73,6 +76,7 @@ public class TrackTab extends FragmentActivity
 		bnStart = (Button) findViewById(R.id.bnStart);
 		bnStop = (Button) findViewById(R.id.bnStop);
 		bnDetail = (Button) findViewById(R.id.bnDetail);
+
 		bnStart.setOnClickListener(new View.OnClickListener() {
 
 			@Override
@@ -80,7 +84,7 @@ public class TrackTab extends FragmentActivity
 				Toast.makeText(getApplicationContext(), "Start Tracking ...", Toast.LENGTH_LONG).show();
 				bnStop.setEnabled(true);
 				bnStart.setEnabled(false);
-				mRequestingLocationUpdates = true;
+				mTracking = true;
 				startLocationUpdates();
 			}
 		});
@@ -94,6 +98,7 @@ public class TrackTab extends FragmentActivity
 				bnStop.setEnabled(false);
 				bnStart.setEnabled(true);
 				mRequestingLocationUpdates = false;
+				mTracking = false;
 				stopLocationUpdates();
 			}
 		});
@@ -182,12 +187,12 @@ public class TrackTab extends FragmentActivity
 		totalTime = totalTime % 60000;
 		long second = totalTime / 1000;
 		mDistance = mCurrentLocation.distanceTo(mStartLocation) / 1000.0;
-		mCurrSpeed = mDistance / hours;
+		double avgSpeed = mDistance / hours;
 		String stime = hour + ":" + minute + ":" + second;
 		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
 		dialog.setTitle("Thông Tin Hành Trình");
 		dialog.setMessage("Tổng quãng đường: " + Math.round(mDistance * 1000) / 1000.0 + "(km) \nTổng thời gian: "
-				+ stime + "\nVận tốc: " + Math.round(mCurrSpeed * 1000) / 1000.0 + "(km/h)");
+				+ stime + "\nVận tốc: " + Math.round(avgSpeed * 1000) / 1000.0 + "(km/h)");
 		AlertDialog alert = dialog.create();
 		alert.show();
 	}
@@ -278,16 +283,23 @@ public class TrackTab extends FragmentActivity
 		// TODO Auto-generated method stub
 		if (mPrevLocation == null) {
 			mPrevLocation = location;
+			CameraPosition camPos = new CameraPosition.Builder()
+					.target(new LatLng(location.getLatitude(), location.getLongitude())).zoom(18)
+					.bearing(location.getBearing()).build();
+			CameraUpdate camUpd3 = CameraUpdateFactory.newCameraPosition(camPos);
+			map.animateCamera(camUpd3);
 		}
 		if (mStartLocation == null) {
 			mStartLocation = location;
 		}
+
 		mCurrentLocation = location;
+		mCurrSpeed = location.getSpeed();
 		mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
 		LatLng prev = new LatLng(mPrevLocation.getLatitude(), mPrevLocation.getLongitude());
 		Log.v("point", location.getLongitude() + " " + location.getLatitude());
-
-		updateUI(prev);
+		if (mTracking)
+			updateUI(prev);
 
 	}
 
@@ -316,10 +328,11 @@ public class TrackTab extends FragmentActivity
 			}
 
 			end = paths[paths.length - 1];
+			WriteToFile(paths, mPlace);
 			mPrevLocation = mCurrentLocation;
 			mPrevLocation.setLatitude(end.latitude);
 			mPrevLocation.setLongitude(end.longitude);
-			WriteToFile(paths, mPlace);
+
 		}
 	}
 
@@ -337,10 +350,12 @@ public class TrackTab extends FragmentActivity
 			loc.setArr_coord(Arrays.asList(paths));
 			// curr = paths[paths.length-1];
 		}
-		long totalTime = mCurrentLocation.getTime() - mStartLocation.getTime();
+		long totalTime = mCurrentLocation.getTime() - mPrevLocation.getTime();
 		double hours = totalTime / 3600000.0;
-		double distance = mCurrentLocation.distanceTo(mStartLocation) / 1000.0;
-		loc.setSpeed(distance / hours);
+		double distance = mCurrentLocation.distanceTo(mPrevLocation) / 1000.0;
+		loc.setDistance(distance);
+		Log.i("speed", mCurrSpeed+"");
+		loc.setSpeed(mCurrSpeed);
 		loc.setCoord(curr);
 		loc.setUser_id(android.os.Build.SERIAL);
 		loc.setRoad_id(placeid);

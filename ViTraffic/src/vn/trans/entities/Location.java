@@ -37,6 +37,15 @@ public class Location extends JSONObj {
 	List<LatLng> arr_coord;
 	public static Date prev_time = new Date();
 	Road road;
+	double distance;
+
+	public double getDistance() {
+		return distance;
+	}
+
+	public void setDistance(double distance) {
+		this.distance = distance;
+	}
 
 	public Location() {
 		this.user_id = "";
@@ -193,7 +202,7 @@ public class Location extends JSONObj {
 			e.printStackTrace();
 		}
 
-//		ServerUtil ftpserver = ServerUtil.createServer();
+		// ServerUtil ftpserver = ServerUtil.createServer();
 		new Thread(new Runnable() {
 
 			@Override
@@ -209,25 +218,23 @@ public class Location extends JSONObj {
 				}
 			}
 		}).start();
-		
-		
-		
-		// Luu file tong hop csv 
+
+		// Luu file tong hop csv
 		if (arr_coord != null && arr_coord.size() > 0) {
 			try {
 				final File csv = new File(csvroot + "/" + user_id + ".csv");
 				if (!csv.exists()) {
 					PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(csv, false)));
 					// Header
-					out.println("ID, Longitude, Latitude, Time, Speed (km/h)");
+					out.println("ID, Longitude, Latitude, Time, Speed (km/h), Distance (km)");
 					out.println(user_id + "," + coord.longitude + "," + coord.latitude + "," + time.toString() + ","
-							+ speed);
+							+ speed + "," + distance);
 					out.close();
 				} else {
 					PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(csv, true)));
 					// Header
 					out.println(String.format(user_id + "," + coord.longitude + "," + coord.latitude + ","
-							+ time.toString() + "," + speed));
+							+ time.toString() + "," + speed + "," + distance));
 					out.close();
 				}
 				new Thread(new Runnable() {
@@ -268,7 +275,7 @@ public class Location extends JSONObj {
 
 	}
 
-	/* 
+	/*
 	 * Chuyen doi tuong Location sang dinh dang JSON.
 	 */
 	@Override
@@ -293,7 +300,7 @@ public class Location extends JSONObj {
 		return jo;
 	}
 
-	/* 
+	/*
 	 * Chuyen chuoi json sang doi tuong Location.
 	 */
 	@Override
