@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -127,13 +128,14 @@ public class Location extends JSONObj {
 	}
 
 	public void setTime(String time) {
-		DateFormat dateformatter = new SimpleDateFormat(IConstants.FORMAT_DATE);
-		try {
-			this.time = dateformatter.parse(time);
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		// SimpleDateFormat dateformatter = new
+		// SimpleDateFormat(IConstants.SPEC_FORM_DATE);
+		// try {
+		this.time = new Date(time.toString());
+		// } catch (ParseException e) {
+		// TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
 	}
 
 	public double getSpeed() {
@@ -308,7 +310,7 @@ public class Location extends JSONObj {
 		// TODO Auto-generated method stub
 		JSONParser parser = new JSONParser();
 		try {
-			Object obj = parser.parse(json);
+			Object obj = parser.parse(json.toString());
 			JSONObject jsonObject = (JSONObject) obj;
 			this.user_id = (String) jsonObject.get("user_id");
 			// this.coord = new Coordinate((Float) jsonObject.get("longtitude"),

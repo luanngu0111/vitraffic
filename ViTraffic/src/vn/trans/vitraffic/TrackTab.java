@@ -108,7 +108,7 @@ public class TrackTab extends FragmentActivity
 
 			@Override
 			public void onClick(View v) {
-				if (mRequestingLocationUpdates) {
+				if (mTracking) {
 					getDetailInfo();
 				} else {
 					dialog.setTitle("Thông Tin Hành Trình");
@@ -237,10 +237,13 @@ public class TrackTab extends FragmentActivity
 	@Override
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
-		stopLocationUpdates();
-		mRequestingLocationUpdates = false;
-		mPrevLocation = null;
-		mGoogleApiClient.disconnect();
+		if (mGoogleApiClient.isConnected()) {
+			stopLocationUpdates();
+			mRequestingLocationUpdates = false;
+			mPrevLocation = null;
+			mGoogleApiClient.disconnect();
+			mTracking = false;
+		}
 		super.onDestroy();
 	}
 
@@ -275,6 +278,21 @@ public class TrackTab extends FragmentActivity
 		// }
 	}
 
+	@Override
+	public void onBackPressed() {
+		// TODO Auto-generated method stub
+		if (mGoogleApiClient.isConnected()) {
+			stopLocationUpdates();
+			mGoogleApiClient.disconnect();
+		}
+
+		mRequestingLocationUpdates = false;
+		mTracking = false;
+		mPrevLocation = null;
+
+		super.onBackPressed();
+	}
+
 	/*
 	 * Ham lang nghe su thay doi vi tri.
 	 */
@@ -284,7 +302,7 @@ public class TrackTab extends FragmentActivity
 		if (mPrevLocation == null) {
 			mPrevLocation = location;
 			CameraPosition camPos = new CameraPosition.Builder()
-					.target(new LatLng(location.getLatitude(), location.getLongitude())).zoom(18)
+					.target(new LatLng(location.getLatitude(), location.getLongitude())).zoom(15)
 					.bearing(location.getBearing()).build();
 			CameraUpdate camUpd3 = CameraUpdateFactory.newCameraPosition(camPos);
 			map.animateCamera(camUpd3);
@@ -316,19 +334,36 @@ public class TrackTab extends FragmentActivity
 		LatLng end = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
 		rq.RoadRequest(new LatLng[] { strt, end });
 		LatLng[] paths = rp.getPathsRp();
+		double hs_lat = 0.0;
+		double hs_long = 0.0;
+		LatLng sideEnd, sideStart;
+
 		if (paths != null) {
+			LatLng[] sidePaths = new LatLng[paths.length];
 			Log.v("path", String.valueOf(paths.length));
 			strt = paths[0];
 			for (int i = 1; i < paths.length; i++) {
 				end = paths[i];
-				Log.v("point", end.longitude + " " + end.latitude);
-				Polyline line = map.addPolyline(new PolylineOptions().add(strt, end).width(10).color(0xff0000ff));
+				double minus = (end.latitude - strt.latitude);
+				double minus_lat = (end.longitude - strt.longitude);
+				hs_long = (minus < 0) ? -IConstants.AUT_LONG : ((minus > 0) ? IConstants.AUT_LONG : 0);
+				hs_lat = (minus_lat < 0) ? IConstants.AUT_LAT : ((minus > 0) ? -IConstants.AUT_LAT : 0);
+				sideEnd = new LatLng(end.latitude + hs_lat, end.longitude + hs_long);
+				sideStart = new LatLng(strt.latitude + hs_lat, strt.longitude + hs_long);
+				if (i == 1) {
+					sidePaths[0] = sideStart;
+				}
+				sidePaths[i] = sideEnd;
+				Log.v("point", String.format("(%f; %f)  (%f; %f)", end.latitude, end.longitude, sideEnd.latitude,
+						sideEnd.longitude));
+				Polyline line = map
+						.addPolyline(new PolylineOptions().add(sideStart, sideEnd).width(8).color(0xff0000ff));
 				line.setVisible(true);
 				strt = end;
 			}
 
 			end = paths[paths.length - 1];
-			WriteToFile(paths, mPlace);
+			WriteToFile(sidePaths, mPlace);
 			mPrevLocation = mCurrentLocation;
 			mPrevLocation.setLatitude(end.latitude);
 			mPrevLocation.setLongitude(end.longitude);
@@ -354,8 +389,8 @@ public class TrackTab extends FragmentActivity
 		double hours = totalTime / 3600000.0;
 		double distance = mCurrentLocation.distanceTo(mPrevLocation) / 1000.0;
 		loc.setDistance(distance);
-		Log.i("speed", mCurrSpeed+"");
-		loc.setSpeed(mCurrSpeed);
+		Log.i("speed", mCurrSpeed * 3.6 + "");
+		loc.setSpeed(mCurrSpeed * 3.6);
 		loc.setCoord(curr);
 		loc.setUser_id(android.os.Build.SERIAL);
 		loc.setRoad_id(placeid);

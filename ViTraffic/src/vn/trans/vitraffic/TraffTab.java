@@ -54,6 +54,7 @@ public class TraffTab extends FragmentActivity
 	private AlarmManager alarmMan;
 	GoogleApiClient mGoogleApiClient;
 	boolean mRequestingLocationUpdates = true;
+	boolean init = true;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +64,7 @@ public class TraffTab extends FragmentActivity
 		initilizeMap();
 		buildGoogleApiClient();
 		createLocationRequest();
-
+		init = true;
 		Intent launchIntent = new Intent(this, AlarmDownloadService.class);
 		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, 0);
 	}
@@ -99,7 +100,7 @@ public class TraffTab extends FragmentActivity
 		map.setMyLocationEnabled(true);
 		map.getUiSettings().setZoomControlsEnabled(true);
 		map.clear();
-		map.animateCamera(CameraUpdateFactory.zoomTo(10), 2000, null);
+		map.animateCamera(CameraUpdateFactory.zoomTo(5), 2000, null);
 		map.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(106, 10)));
 
 		// check if map is created successfully or not
@@ -188,15 +189,22 @@ public class TraffTab extends FragmentActivity
 				for (FTPFile f : files) {
 					if (f.isDirectory())
 						continue;
-					Log.v("file", ServerUtil.converDate2String(f.getTimestamp()) + "  " + f.getName());
+					// Log.v("file",
+					// ServerUtil.converDate2String(f.getTimestamp()) + " " +
+					// f.getName());
 					String json = server.Download(f.getName());
 					if (json != null) {
-						Location loc = new Location();
-						loc.conv2Obj(json);
-						Road r = new Road();
-						r.setArr_paths(loc.getArr_coord());
-						r.setAvg_speed(loc.getSpeed());
-						publishProgress(r);
+						try {
+							Location loc = new Location();
+							loc.conv2Obj(json);
+							Road r = new Road();
+							r.setArr_paths(loc.getArr_coord());
+							r.setAvg_speed(loc.getSpeed());
+							publishProgress(r);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+
 					}
 				}
 				Log.d("server", "Connection success files " + files.length);
@@ -232,7 +240,7 @@ public class TraffTab extends FragmentActivity
 				int speed = (int) road.getAvg_speed();
 
 				// Xac dinh mau dua tren van toc.
-				if (speed > 20) {
+				if (speed >= IConstants.COLORS.length) {
 					color = IConstants.COLORS[IConstants.COLORS.length - 1];
 				} else {
 					color = IConstants.COLORS[speed];
@@ -240,9 +248,12 @@ public class TraffTab extends FragmentActivity
 				Log.v("draw", start.latitude + " " + start.longitude);
 				for (int i = 1; i < paths.size(); i++) {
 					LatLng end = paths.get(i);
-					Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(8).color(color));
-					if (bounds.contains(end)) // Kiem tra toa do co nam trong
-												// vung ban do dang hien thi hay
+
+					Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(6).color(color));
+					if (bounds.contains(end)) // Kiem tra toa do co nam
+												// trong
+												// vung ban do dang hien thi
+												// hay
 												// khong
 					{
 						line.setVisible(true);
@@ -303,11 +314,14 @@ public class TraffTab extends FragmentActivity
 	@Override
 	public void onLocationChanged(android.location.Location location) {
 		// TODO Auto-generated method stub
-		CameraPosition camPos = new CameraPosition.Builder()
-				.target(new LatLng(location.getLatitude(), location.getLongitude())).zoom(18)
-				.bearing(location.getBearing()).build();
-		CameraUpdate camUpd3 = CameraUpdateFactory.newCameraPosition(camPos);
-		map.animateCamera(camUpd3);
+		if (init) {
+			CameraPosition camPos = new CameraPosition.Builder()
+					.target(new LatLng(location.getLatitude(), location.getLongitude())).zoom(15)
+					.bearing(location.getBearing()).build();
+			CameraUpdate camUpd3 = CameraUpdateFactory.newCameraPosition(camPos);
+			map.animateCamera(camUpd3);
+			init = false;
+		}
 
 	}
 

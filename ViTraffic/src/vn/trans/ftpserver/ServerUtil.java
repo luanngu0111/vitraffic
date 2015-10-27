@@ -104,8 +104,11 @@ public class ServerUtil {
 
 	}
 
-	/** Ham thuc hien lay danh sach cac file tren server.
-	 * @param isfilter: kiem tra dieu kien loc. True la loc, False la lay tat ca.
+	/**
+	 * Ham thuc hien lay danh sach cac file tren server.
+	 * 
+	 * @param isfilter:
+	 *            kiem tra dieu kien loc. True la loc, False la lay tat ca.
 	 * @return
 	 */
 	public FTPFile[] getAllFile(boolean isfilter) {
@@ -118,19 +121,30 @@ public class ServerUtil {
 				@Override
 				public boolean accept(FTPFile file) {
 					// TODO Auto-generated method stub
-					Calendar cal = Calendar.getInstance();
-					Calendar timestamp = file.getTimestamp();
-					long during = cal.getTimeInMillis() - timestamp.getTimeInMillis();
-					if (during <= IConstants.REQUEST_TRAFF)
-						return true;
-
+					if (file.getName().contains(".txt") || file.getName().contains(".csv")) {
+						Calendar cal = Calendar.getInstance();
+						Calendar timestamp = file.getTimestamp();
+						long during = cal.getTimeInMillis() - timestamp.getTimeInMillis();
+						if (during <= IConstants.REQUEST_TRAFF)
+							return true;
+						return false;
+					}
 					return false;
 				}
 			};
 			if (isfilter == true) {
 				files = mFTP.listFiles(".", filter);
 			} else {
-				files = mFTP.listFiles();
+				files = mFTP.listFiles(".", new FTPFileFilter() {
+
+					@Override
+					public boolean accept(FTPFile arg0) {
+						// TODO Auto-generated method stub
+						if (arg0.getName().contains(".txt") || arg0.getName().contains(".csv"))
+							return true;
+						return false;
+					}
+				});
 			}
 			return files;
 		} catch (IOException e) {
@@ -187,7 +201,9 @@ public class ServerUtil {
 		return null;
 	}
 
-	/** Download file tu server ve dua tren ten file duoc cung cap.
+	/**
+	 * Download file tu server ve dua tren ten file duoc cung cap.
+	 * 
 	 * @param filename
 	 * @return
 	 */
@@ -201,14 +217,14 @@ public class ServerUtil {
 		if (filename.contains(".csv")) {
 			String rootpath = root + "/csv";
 			File croot = new File(rootpath);
-			//Tao thu muc csv neu chua co
+			// Tao thu muc csv neu chua co
 			if (!croot.exists()) {
 				croot.mkdir();
 			}
 			filepath = rootpath + "/" + filename;
 		}
 
-		//Tao thu muc theo duong dan root neu chua co.
+		// Tao thu muc theo duong dan root neu chua co.
 		File froot = new File(root);
 		if (!froot.exists()) {
 			froot.mkdir();
@@ -218,8 +234,9 @@ public class ServerUtil {
 		try {
 			File file = new File(filepath);
 
-			//File duoc tai ve neu chua co tren may. Neu co roi thi chi can doc lai.
-			if (!file.exists()) //File chua ton tai 
+			// File duoc tai ve neu chua co tren may. Neu co roi thi chi can doc
+			// lai.
+			if (!file.exists()) // File chua ton tai
 			{
 				out = new FileOutputStream(file);
 				boolean result = mFTP.retrieveFile(filename, out);
@@ -238,7 +255,7 @@ public class ServerUtil {
 				} else {
 					Log.d("download", "error");
 				}
-			} else { //File ton tai.
+			} else { // File ton tai.
 				BufferedReader br = null;
 
 				String sCurrentLine;
