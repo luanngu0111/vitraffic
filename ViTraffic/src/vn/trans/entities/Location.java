@@ -283,23 +283,28 @@ public class Location extends JSONObj {
 	@Override
 	public JSONObject conv2JsonObj() {
 		// TODO Auto-generated method stub
-		JSONObject jo = new JSONObject();
-		JSONArray jsa = new JSONArray();
-		for (LatLng pos : this.arr_coord) {
-			JSONObject obj = new JSONObject();
-			obj.put("longitude", pos.longitude);
-			obj.put("latitude", pos.latitude);
-			jsa.add(obj);
-		}
-		jo.put("longitude", this.coord.longitude);
-		jo.put("latitude", this.coord.latitude);
-		jo.put("user_id", this.user_id);
-		jo.put("time", this.time.toString());
-		jo.put("speed", this.speed);
-		jo.put("road_id", this.road_id);
-		jo.put("paths", jsa);
+		try {
+			JSONObject jo = new JSONObject();
+			JSONArray jsa = new JSONArray();
+			for (LatLng pos : this.arr_coord) {
+				JSONObject obj = new JSONObject();
+				obj.put("longitude", pos.longitude);
+				obj.put("latitude", pos.latitude);
+				jsa.add(obj);
+			}
+			jo.put("longitude", this.coord.longitude);
+			jo.put("latitude", this.coord.latitude);
+			jo.put("user_id", this.user_id);
+			jo.put("time", this.time.toString());
+			jo.put("speed", this.speed);
+			jo.put("road_id", this.road_id);
+			jo.put("paths", jsa);
 
-		return jo;
+			return jo;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	/*

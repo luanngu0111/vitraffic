@@ -25,7 +25,7 @@ public interface IConstants {
 	public static String PASSWORD = "123456789";
 	public static int PORT = 21;
 	
-	public static double AUT_LONG = 0.00008;
-	public static double AUT_LAT = 0.00004;
+	public static double AUT_LONG = 0.00006;
+	public static double AUT_LAT = 0.00003;
 
 }

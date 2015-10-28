@@ -330,9 +330,9 @@ public class TrackTab extends FragmentActivity
 	private void updateUI(LatLng prev) {
 		RequestTrack rq = new RequestTrack(this);
 		ResponseTrack rp = ResponseTrack.createObj();
-		LatLng strt = prev;
+		LatLng start = prev;
 		LatLng end = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
-		rq.RoadRequest(new LatLng[] { strt, end });
+		rq.RoadRequest(new LatLng[] { start, end });
 		LatLng[] paths = rp.getPathsRp();
 		double hs_lat = 0.0;
 		double hs_long = 0.0;
@@ -341,25 +341,23 @@ public class TrackTab extends FragmentActivity
 		if (paths != null) {
 			LatLng[] sidePaths = new LatLng[paths.length];
 			Log.v("path", String.valueOf(paths.length));
-			strt = paths[0];
 			for (int i = 1; i < paths.length; i++) {
+				start = paths[i - 1];
 				end = paths[i];
-				double minus = (end.latitude - strt.latitude);
-				double minus_lat = (end.longitude - strt.longitude);
+				double minus = (end.latitude - start.latitude);
+				double minus_lat = (end.longitude - start.longitude);
 				hs_long = (minus < 0) ? -IConstants.AUT_LONG : ((minus > 0) ? IConstants.AUT_LONG : 0);
 				hs_lat = (minus_lat < 0) ? IConstants.AUT_LAT : ((minus > 0) ? -IConstants.AUT_LAT : 0);
-				sideEnd = new LatLng(end.latitude + hs_lat, end.longitude + hs_long);
-				sideStart = new LatLng(strt.latitude + hs_lat, strt.longitude + hs_long);
-				if (i == 1) {
-					sidePaths[0] = sideStart;
-				}
+				sideEnd = new LatLng(end.latitude, end.longitude + hs_long);
+				sideStart = new LatLng(start.latitude, start.longitude + hs_long);
+				sidePaths[i - 1] = sideStart;
 				sidePaths[i] = sideEnd;
-				Log.v("point", String.format("(%f; %f)  (%f; %f)", end.latitude, end.longitude, sideEnd.latitude,
-						sideEnd.longitude));
-				Polyline line = map
-						.addPolyline(new PolylineOptions().add(sideStart, sideEnd).width(8).color(0xff0000ff));
+				Log.v("points", String.format("(%f; %f) (%f; %f)  (%f; %f)", hs_lat, hs_long, end.latitude,
+						end.longitude, paths[i].latitude, paths[i].longitude));
+				Polyline line = map.addPolyline(new PolylineOptions().add(sideStart, sideEnd).width(8).color(0xff0000ff));
 				line.setVisible(true);
-				strt = end;
+				// sideStart = sideEnd;
+				//start = end;
 			}
 
 			end = paths[paths.length - 1];
