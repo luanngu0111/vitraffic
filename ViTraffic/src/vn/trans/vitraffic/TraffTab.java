@@ -236,7 +236,6 @@ public class TraffTab extends FragmentActivity
 		if (road != null) {
 			paths = road.getArr_paths();
 			if (paths != null && paths.size() > 0) {
-				LatLng start = paths.get(0);
 				int speed = (int) road.getAvg_speed();
 
 				// Xac dinh mau dua tren van toc.
@@ -245,8 +244,8 @@ public class TraffTab extends FragmentActivity
 				} else {
 					color = IConstants.COLORS[speed];
 				}
-				Log.v("draw", start.latitude + " " + start.longitude);
 				for (int i = 1; i < paths.size(); i++) {
+					LatLng start = paths.get(i - 1);
 					LatLng end = paths.get(i);
 
 					Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(6).color(color));
@@ -260,7 +259,6 @@ public class TraffTab extends FragmentActivity
 						Log.v("draw", end.latitude + " " + end.longitude);
 					}
 
-					start = end;
 				}
 				Log.v("draw", "finish line");
 			}
