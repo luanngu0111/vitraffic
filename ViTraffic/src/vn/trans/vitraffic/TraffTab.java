@@ -235,9 +235,10 @@ public class TraffTab extends FragmentActivity
 		List<LatLng> paths = new ArrayList<LatLng>();
 		if (road != null) {
 			paths = road.getArr_paths();
-			if (paths != null && paths.size() > 0) {
+			if (paths != null) {
 				int speed = (int) road.getAvg_speed();
-
+				double hs_lat = 0.0;
+				double hs_long = 0.0;
 				// Xac dinh mau dua tren van toc.
 				if (speed >= IConstants.COLORS.length) {
 					color = IConstants.COLORS[IConstants.COLORS.length - 1];
@@ -247,15 +248,24 @@ public class TraffTab extends FragmentActivity
 				for (int i = 1; i < paths.size(); i++) {
 					LatLng start = paths.get(i - 1);
 					LatLng end = paths.get(i);
+					LatLng sideStart = null, sideEnd = null;
+					boolean neg = end.latitude < start.latitude;
+					if (neg) {
+						sideStart = new LatLng(start.latitude, start.longitude - IConstants.AUT_LONG);
+						sideEnd = new LatLng(end.latitude, end.longitude - IConstants.AUT_LONG);
+					} else {
+						sideStart = new LatLng(start.latitude, start.longitude + IConstants.AUT_LONG);
+						sideEnd = new LatLng(end.latitude, end.longitude + IConstants.AUT_LONG);
+					}
 
-					Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(6).color(color));
 					if (bounds.contains(end)) // Kiem tra toa do co nam
 												// trong
 												// vung ban do dang hien thi
 												// hay
 												// khong
 					{
-						line.setVisible(true);
+						map.addPolyline(new PolylineOptions().add(sideStart, sideEnd).width(6).color(color))
+								.setVisible(true);
 						Log.v("draw", end.latitude + " " + end.longitude);
 					}
 

@@ -257,7 +257,9 @@ public class TrackTab extends FragmentActivity
 		mLocationRequest = new LocationRequest();
 		mLocationRequest.setInterval(IConstants.INTERVAL);
 		mLocationRequest.setFastestInterval(IConstants.FAST_INTV);
+//		mLocationRequest.setSmallestDisplacement(200);
 		mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+		
 	}
 
 	private void initilizeMap() {
@@ -334,34 +336,20 @@ public class TrackTab extends FragmentActivity
 		LatLng end = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
 		rq.RoadRequest(new LatLng[] { start, end });
 		LatLng[] paths = rp.getPathsRp();
-		double hs_lat = 0.0;
-		double hs_long = 0.0;
-		LatLng sideEnd, sideStart;
 
 		if (paths != null) {
-			LatLng[] sidePaths = new LatLng[paths.length];
 			Log.v("path", String.valueOf(paths.length));
 			for (int i = 1; i < paths.length; i++) {
 				start = paths[i - 1];
 				end = paths[i];
-				double minus = (end.latitude - start.latitude);
-				double minus_lat = (end.longitude - start.longitude);
-				hs_long = (minus < 0) ? -IConstants.AUT_LONG : ((minus > 0) ? IConstants.AUT_LONG : 0);
-				hs_lat = (minus_lat < 0) ? IConstants.AUT_LAT : ((minus > 0) ? -IConstants.AUT_LAT : 0);
-				sideEnd = new LatLng(end.latitude, end.longitude + hs_long);
-				sideStart = new LatLng(start.latitude, start.longitude + hs_long);
-				sidePaths[i - 1] = sideStart;
-				sidePaths[i] = sideEnd;
-				Log.v("points", String.format("(%f; %f) (%f; %f)  (%f; %f)", hs_lat, hs_long, end.latitude,
+				Log.v("points", String.format("(%f; %f)  (%f; %f)", end.latitude,
 						end.longitude, paths[i].latitude, paths[i].longitude));
-				Polyline line = map.addPolyline(new PolylineOptions().add(sideStart, sideEnd).width(8).color(0xff0000ff));
+				Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(8).color(0xff0000ff));
 				line.setVisible(true);
-				// sideStart = sideEnd;
-				//start = end;
 			}
 
 			end = paths[paths.length - 1];
-			WriteToFile(sidePaths, mPlace);
+			WriteToFile(paths, mPlace);
 			mPrevLocation = mCurrentLocation;
 			mPrevLocation.setLatitude(end.latitude);
 			mPrevLocation.setLongitude(end.longitude);

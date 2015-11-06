@@ -6,7 +6,7 @@ public interface IConstants {
 	public static String SPEC_FORM_DATE = "EEE MMM dd HH:mm:ss zzz yyyy";
 	public static long REQUEST_TRAFF = 3600000 + 11 * 3600000;
 	public static long ALARM_INTERVAL = 900000;
-	public static int INTERVAL = 4000; // time to request location mms
+	public static int INTERVAL = 6000; // time to request location mms
 	public static int FAST_INTV = 4000; // fast time to request location mms
 	public static String KEY_API_SERV = "AIzaSyAjg-AyQtRQTb472UPe9TrLQU-ADlzWYKw";
 	public static String RQ_ROAD = "https://roads.googleapis.com/v1";

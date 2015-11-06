@@ -192,71 +192,75 @@ public class Location extends JSONObj {
 		}
 		String filename = String.format("%s/%s-%s-%s.txt", proot, this.user_id, stime, this.road_id);
 		// Goi ham tao doi tuong json
-		String obj = conv2JsonObj().toJSONString();
-		// Ghi file len server:
-		Log.v("json", obj);
-		final File file = new File(filename);
-		try {
-			FileOutputStream out = new FileOutputStream(file);
-			out.write(obj.getBytes());
-			out.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		JSONObject jsobj = conv2JsonObj();
+		if (jsobj != null) {
+			String obj = conv2JsonObj().toJSONString();
 
-		// ServerUtil ftpserver = ServerUtil.createServer();
-		new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				boolean status = false;
-				ServerUtil ftpserver = ServerUtil.createServer();
-				status = ftpserver.serverConnect(IConstants.USERNAME, IConstants.PASSWORD, IConstants.PORT);
-				if (status == true) {
-					Log.d("server", "Connection Success");
-					ftpserver.Upload(file);
-				} else {
-					Log.d("server", "Connection failed");
-				}
-			}
-		}).start();
-
-		// Luu file tong hop csv
-		if (arr_coord != null && arr_coord.size() > 0) {
+			// Ghi file len server:
+			Log.v("json", obj);
+			final File file = new File(filename);
 			try {
-				final File csv = new File(csvroot + "/" + user_id + ".csv");
-				if (!csv.exists()) {
-					PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(csv, false)));
-					// Header
-					out.println("ID, Longitude, Latitude, Time, Speed (km/h), Distance (km)");
-					out.println(user_id + "," + coord.longitude + "," + coord.latitude + "," + time.toString() + ","
-							+ speed + "," + distance);
-					out.close();
-				} else {
-					PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(csv, true)));
-					// Header
-					out.println(String.format(user_id + "," + coord.longitude + "," + coord.latitude + ","
-							+ time.toString() + "," + speed + "," + distance));
-					out.close();
-				}
-				new Thread(new Runnable() {
-
-					@Override
-					public void run() {
-						// TODO Auto-generated method stub
-						boolean status = false;
-						ServerUtil ftpserver = ServerUtil.createServer();
-						status = ftpserver.serverConnect(IConstants.USERNAME, IConstants.PASSWORD, IConstants.PORT);
-						if (status == true) {
-							Log.d("server", "Connection Success CSV");
-							ftpserver.Upload(csv);
-						} else {
-							Log.d("server", "Connection failed CSV");
-						}
-					}
-				}).start();
+				FileOutputStream out = new FileOutputStream(file);
+				out.write(obj.getBytes());
+				out.close();
 			} catch (IOException e) {
-				// exception handling left as an exercise for the reader
+				e.printStackTrace();
+			}
+
+			// ServerUtil ftpserver = ServerUtil.createServer();
+			new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+					boolean status = false;
+					ServerUtil ftpserver = ServerUtil.createServer();
+					status = ftpserver.serverConnect(IConstants.USERNAME, IConstants.PASSWORD, IConstants.PORT);
+					if (status == true) {
+						Log.d("server", "Connection Success");
+						ftpserver.Upload(file);
+					} else {
+						Log.d("server", "Connection failed");
+					}
+				}
+			}).start();
+
+			// Luu file tong hop csv
+			if (arr_coord != null && arr_coord.size() > 0) {
+				try {
+					final File csv = new File(csvroot + "/" + user_id + ".csv");
+					if (!csv.exists()) {
+						PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(csv, false)));
+						// Header
+						out.println("ID, Longitude, Latitude, Time, Speed (km/h), Distance (km)");
+						out.println(user_id + "," + coord.longitude + "," + coord.latitude + "," + time.toString() + ","
+								+ speed + "," + distance);
+						out.close();
+					} else {
+						PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(csv, true)));
+						// Header
+						out.println(String.format(user_id + "," + coord.longitude + "," + coord.latitude + ","
+								+ time.toString() + "," + speed + "," + distance));
+						out.close();
+					}
+					new Thread(new Runnable() {
+
+						@Override
+						public void run() {
+							// TODO Auto-generated method stub
+							boolean status = false;
+							ServerUtil ftpserver = ServerUtil.createServer();
+							status = ftpserver.serverConnect(IConstants.USERNAME, IConstants.PASSWORD, IConstants.PORT);
+							if (status == true) {
+								Log.d("server", "Connection Success CSV");
+								ftpserver.Upload(csv);
+							} else {
+								Log.d("server", "Connection failed CSV");
+							}
+						}
+					}).start();
+				} catch (IOException e) {
+					// exception handling left as an exercise for the reader
+				}
 			}
 		}
 	}
@@ -313,8 +317,9 @@ public class Location extends JSONObj {
 	@Override
 	public Location conv2Obj(String json) {
 		// TODO Auto-generated method stub
-		JSONParser parser = new JSONParser();
+
 		try {
+			JSONParser parser = new JSONParser();
 			Object obj = parser.parse(json.toString());
 			JSONObject jsonObject = (JSONObject) obj;
 			this.user_id = (String) jsonObject.get("user_id");
@@ -334,12 +339,13 @@ public class Location extends JSONObj {
 				this.speed = 0.0;
 			}
 			this.road_id = (String) jsonObject.get("road_id");
+			return this;
 		} catch (org.json.simple.parser.ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return null;
 
-		return this;
 	}
 
 	public void calcuSpeed(Context context) {
