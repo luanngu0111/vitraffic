@@ -1,6 +1,6 @@
 package vn.trans.json;
 
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 
 public abstract class JSONObj extends Object {
 	public abstract JSONObject conv2JsonObj();

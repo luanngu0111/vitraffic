@@ -33,7 +33,7 @@ public class RequestTrack {
 				pathEncoded += co.latitude + "," + co.longitude;
 			}
 		}
-		param = String.format("path=%s&interpolate=false", pathEncoded);
+		param = String.format("path=%s&interpolate=true", pathEncoded);
 		sendRequest(IConstants.RQ_ROAD, "snapToRoads", param);
 	}
 

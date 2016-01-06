@@ -3,13 +3,10 @@ package vn.trans.vitraffic;
 import android.app.TabActivity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.telephony.SubscriptionManager.OnSubscriptionsChangedListener;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TabHost;
 import android.widget.TabHost.TabSpec;
-import vn.trans.ftpserver.ServerUtil;
 
 public class MainActivity extends TabActivity {
 
@@ -29,12 +26,19 @@ public class MainActivity extends TabActivity {
 		// Tab for Traffic
 		TabSpec traffSpec = tabHost.newTabSpec("traff");
 		Intent traffIntent = new Intent(this, TraffTab.class);
-		traffSpec.setIndicator("Traffic Layer");
+		traffSpec.setIndicator("Traffic");
 		traffSpec.setContent(traffIntent);
+		
+		// Tab for Direction
+		TabSpec dirSpec = tabHost.newTabSpec("direct");
+		Intent dirIntent = new Intent(this, DirectionTab.class);
+		dirSpec.setIndicator("Direction");
+		dirSpec.setContent(dirIntent);
 
 		// Add all tabspec to tabhost
 		tabHost.addTab(trackSpec);
 		tabHost.addTab(traffSpec);
+		tabHost.addTab(dirSpec);
 		
 
 	}

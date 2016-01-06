@@ -1,9 +1,6 @@
 package vn.trans.track;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.net.SocketException;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

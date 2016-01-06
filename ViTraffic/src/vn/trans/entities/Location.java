@@ -6,25 +6,26 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.google.android.gms.maps.model.LatLng;
 
 import android.content.Context;
-import android.os.AsyncTask;
 import android.util.Log;
 import vn.trans.ftpserver.ServerUtil;
 import vn.trans.json.JSONObj;
+import vn.trans.json.JSONParser;
 import vn.trans.track.RequestTrack;
 import vn.trans.track.ResponseTrack;
 import vn.trans.utils.IConstants;
@@ -34,7 +35,17 @@ public class Location extends JSONObj {
 	LatLng coord;
 	Date time; // realtime;
 	double speed;
-	String road_id;
+	int road_id;
+	int way_pos;
+
+	public int getWay_pos() {
+		return way_pos;
+	}
+
+	public void setWay_pos(int way_pos) {
+		this.way_pos = way_pos;
+	}
+
 	List<LatLng> arr_coord;
 	public static Date prev_time = new Date();
 	Road road;
@@ -53,11 +64,11 @@ public class Location extends JSONObj {
 		this.coord = new LatLng(0, 0);
 		this.time = new Date();
 		this.speed = 0.0f;
-		this.road_id = "0";
+		this.road_id = 0;
 		this.arr_coord = new ArrayList<LatLng>();
 	}
 
-	public Location(LatLng coord, Date time, float speed, String road_id) {
+	public Location(LatLng coord, Date time, float speed, int road_id) {
 		this();
 		this.setCoord(coord);
 		this.setTime(time);
@@ -66,7 +77,7 @@ public class Location extends JSONObj {
 		this.arr_coord = new ArrayList<LatLng>();
 	}
 
-	public Location(String user_id, LatLng coord, Date time, float speed, String road_id, Road road) {
+	public Location(String user_id, LatLng coord, Date time, float speed, int road_id, Road road) {
 		this.user_id = user_id;
 		this.coord = coord;
 		this.time = time;
@@ -146,12 +157,12 @@ public class Location extends JSONObj {
 		this.speed = speed;
 	}
 
-	public String getRoad_id() {
+	public int getRoad_id() {
 		return road_id;
 	}
 
-	public void setRoad_id(String string) {
-		this.road_id = string;
+	public void setRoad_id(int road_id) {
+		this.road_id = road_id;
 	}
 
 	public void setRoad(Road r) {
@@ -170,6 +181,62 @@ public class Location extends JSONObj {
 		this.arr_coord = arr_coord;
 		this.coord = arr_coord.get(arr_coord.size() - 1);
 
+	}
+
+	public void saveToDb(LatLng position, double speed) {
+		String TAG_SUCCESS = "success";
+		String TAG_PRODUCTS = "way";
+		String TAG_AMOUNT = "amount";
+		String TAG_AVG_SPEED = "avg_speed";
+		String TAG_START = "start";
+		String TAG_END = "end";
+
+		String TAG_NAME = "name";
+		JSONParser jParser = new JSONParser();
+		HashMap<String, String> wayFound;
+		String urlFindWay = "http://vitraffic.byethost12.com/find_way.php";
+		List<NameValuePair> params = new ArrayList<NameValuePair>();
+		params.add(new BasicNameValuePair("lat", String.valueOf(position.latitude)));
+		params.add(new BasicNameValuePair("lon", String.valueOf(position.longitude)));
+
+		JSONObject json = jParser.makeHttpRequest(urlFindWay, "GET", params);
+		double avg_speed = 0.0;
+		int start=0, end=0;
+		int amount = 0;
+		try {
+			int success = json.getInt(TAG_SUCCESS);
+			if (success == 1) {
+				JSONObject w = json.getJSONObject("way");
+				start = w.getInt(TAG_START);
+				end = w.getInt(TAG_END);
+				avg_speed = w.getDouble(TAG_AVG_SPEED);
+				amount = w.getInt(TAG_AMOUNT);
+				avg_speed = (avg_speed * amount + speed) / (++amount) * 1.0;
+			}
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		String urlUpdate = "http://vitraffic.byethost12.com/update_traffic.php";
+		params = new ArrayList<NameValuePair>();
+		params.add(new BasicNameValuePair("start", String.valueOf(start)));
+		params.add(new BasicNameValuePair("end", String.valueOf(end)));
+		params.add(new BasicNameValuePair("speed", String.valueOf(avg_speed)));
+		params.add(new BasicNameValuePair("amount", String.valueOf(amount)));
+		
+		json = jParser.makeHttpRequest(urlUpdate, "GET", params);
+		try {
+			int success = json.getInt(TAG_SUCCESS);
+			if (success==1){
+				Log.v("Update Tracking", "Sucessfully");
+			} else {
+				Log.v("Update Tracking", "Failed");
+			}
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 
 	/**
@@ -194,7 +261,7 @@ public class Location extends JSONObj {
 		// Goi ham tao doi tuong json
 		JSONObject jsobj = conv2JsonObj();
 		if (jsobj != null) {
-			String obj = conv2JsonObj().toJSONString();
+			String obj = conv2JsonObj().toString();
 
 			// Ghi file len server:
 			Log.v("json", obj);
@@ -294,7 +361,7 @@ public class Location extends JSONObj {
 				JSONObject obj = new JSONObject();
 				obj.put("longitude", pos.longitude);
 				obj.put("latitude", pos.latitude);
-				jsa.add(obj);
+				jsa.put(obj);
 			}
 			jo.put("longitude", this.coord.longitude);
 			jo.put("latitude", this.coord.latitude);
@@ -302,6 +369,7 @@ public class Location extends JSONObj {
 			jo.put("time", this.time.toString());
 			jo.put("speed", this.speed);
 			jo.put("road_id", this.road_id);
+			jo.put("way_pos", this.way_pos);
 			jo.put("paths", jsa);
 
 			return jo;
@@ -318,15 +386,15 @@ public class Location extends JSONObj {
 	public Location conv2Obj(String json) {
 		// TODO Auto-generated method stub
 
+		JSONObject jsonObject;
 		try {
-			JSONParser parser = new JSONParser();
-			Object obj = parser.parse(json.toString());
-			JSONObject jsonObject = (JSONObject) obj;
+			jsonObject = new JSONObject(json.toString());
+
 			this.user_id = (String) jsonObject.get("user_id");
 			// this.coord = new Coordinate((Float) jsonObject.get("longtitude"),
 			// (Float) jsonObject.get("latitude"));
 			JSONArray arrcoord = (JSONArray) jsonObject.get("paths");
-			for (int i = 0; i < arrcoord.size(); i++) {
+			for (int i = 0; i < arrcoord.length(); i++) {
 				JSONObject c = (JSONObject) arrcoord.get(i);
 				LatLng item = new LatLng((Double) c.get("latitude"), (Double) c.get("longitude"));
 				this.arr_coord.add(item);
@@ -338,9 +406,10 @@ public class Location extends JSONObj {
 			} else {
 				this.speed = 0.0;
 			}
-			this.road_id = (String) jsonObject.get("road_id");
+			this.road_id = (Integer) jsonObject.get("road_id");
+			this.way_pos = (Integer) jsonObject.get("way_pos");
 			return this;
-		} catch (org.json.simple.parser.ParseException e) {
+		} catch (JSONException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

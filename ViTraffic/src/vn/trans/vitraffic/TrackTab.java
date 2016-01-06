@@ -1,8 +1,10 @@
 package vn.trans.vitraffic;
 
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -38,6 +40,7 @@ import android.widget.Toast;
 import vn.trans.track.AlarmUploadService;
 import vn.trans.track.RequestTrack;
 import vn.trans.track.ResponseTrack;
+import vn.trans.track.UpdateTracking;
 import vn.trans.utils.IConstants;
 
 public class TrackTab extends FragmentActivity
@@ -256,10 +259,10 @@ public class TrackTab extends FragmentActivity
 	protected void createLocationRequest() {
 		mLocationRequest = new LocationRequest();
 		mLocationRequest.setInterval(IConstants.INTERVAL);
-		mLocationRequest.setFastestInterval(IConstants.FAST_INTV);
-//		mLocationRequest.setSmallestDisplacement(200);
+		// mLocationRequest.setFastestInterval(IConstants.FAST_INTV);
+		// mLocationRequest.setSmallestDisplacement(30);
 		mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-		
+
 	}
 
 	private void initilizeMap() {
@@ -342,8 +345,12 @@ public class TrackTab extends FragmentActivity
 			for (int i = 1; i < paths.length; i++) {
 				start = paths[i - 1];
 				end = paths[i];
-				Log.v("points", String.format("(%f; %f)  (%f; %f)", end.latitude,
-						end.longitude, paths[i].latitude, paths[i].longitude));
+				Log.v("points", String.format("(%f; %f)  (%f; %f)", end.latitude, end.longitude, paths[i].latitude,
+						paths[i].longitude));
+				
+				List<LatLng> point = new ArrayList<LatLng>(); 
+				PolylineOptions po = new PolylineOptions();
+				po.addAll(point);
 				Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(8).color(0xff0000ff));
 				line.setVisible(true);
 			}
@@ -376,11 +383,12 @@ public class TrackTab extends FragmentActivity
 		double distance = mCurrentLocation.distanceTo(mPrevLocation) / 1000.0;
 		loc.setDistance(distance);
 		Log.i("speed", mCurrSpeed * 3.6 + "");
-		loc.setSpeed(mCurrSpeed * 3.6);
-		loc.setCoord(curr);
-		loc.setUser_id(android.os.Build.SERIAL);
-		loc.setRoad_id(placeid);
-		loc.saveToFile();
+		new UpdateTracking().execute(curr, mCurrSpeed * 3.6);
+		// loc.setSpeed(mCurrSpeed * 3.6);
+		// loc.setCoord(curr);
+		// loc.setUser_id(android.os.Build.SERIAL);
+		// loc.setRoad_id(0);
+		// loc.saveToDb(curr, mCurrSpeed * 3.6);
 	}
 
 	@Override

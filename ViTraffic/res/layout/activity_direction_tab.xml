@@ -1,0 +1,41 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <fragment
+        android:id="@+id/mapdirect"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        class="com.google.android.gms.maps.SupportMapFragment" >
+
+        
+    </fragment>
+     <Button
+        android:id="@+id/bnLoad"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="20dp"
+        android:layout_marginLeft="30dp"
+        android:text="Start" />
+
+    <Button
+        android:id="@+id/bnSwap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/bnLoad"
+        android:layout_alignBottom="@+id/bnLoad"
+        android:layout_toRightOf="@+id/bnLoad"
+        android:text="Swap" />
+
+    <Button
+        android:id="@+id/bnClear"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/bnSwap"
+        android:layout_alignBottom="@+id/bnSwap"
+        android:layout_toRightOf="@+id/bnSwap"
+        android:text="Clear" />
+
+</RelativeLayout>

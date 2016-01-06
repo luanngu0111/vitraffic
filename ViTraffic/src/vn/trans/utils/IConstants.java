@@ -6,8 +6,8 @@ public interface IConstants {
 	public static String SPEC_FORM_DATE = "EEE MMM dd HH:mm:ss zzz yyyy";
 	public static long REQUEST_TRAFF = 3600000 + 11 * 3600000;
 	public static long ALARM_INTERVAL = 900000;
-	public static int INTERVAL = 6000; // time to request location mms
-	public static int FAST_INTV = 4000; // fast time to request location mms
+	public static int INTERVAL = 7000; // time to request location mms
+	public static int FAST_INTV = 5000; // fast time to request location mms
 	public static String KEY_API_SERV = "AIzaSyAjg-AyQtRQTb472UPe9TrLQU-ADlzWYKw";
 	public static String RQ_ROAD = "https://roads.googleapis.com/v1";
 	public static String RQ_DIST = "https://maps.googleapis.com/maps/api/distancematrix";
@@ -27,5 +27,9 @@ public interface IConstants {
 	
 	public static double AUT_LONG = 0.00006;
 	public static double AUT_LAT = 0.00003;
+	public static String COLOR_RED = "FFFF0000";
+	public static String COLOR_ORANGE = "FFFF6600";
+	public static String COLOR_BLUE = "FF37D9FF";
+	public static String COLOR_GREEN = "FF00FF00";
 
 }

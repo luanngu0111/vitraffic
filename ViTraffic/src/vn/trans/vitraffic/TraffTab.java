@@ -1,10 +1,7 @@
 package vn.trans.vitraffic;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import org.apache.commons.net.ftp.FTPFile;
 
@@ -28,10 +25,8 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.SystemClock;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
@@ -41,8 +36,6 @@ import android.widget.Toast;
 import vn.trans.entities.Location;
 import vn.trans.entities.Road;
 import vn.trans.ftpserver.ServerUtil;
-import vn.trans.track.RequestTrack;
-import vn.trans.track.ResponseTrack;
 import vn.trans.traff.AlarmDownloadService;
 import vn.trans.utils.IConstants;
 
@@ -333,11 +326,7 @@ public class TraffTab extends FragmentActivity
 
 	}
 
-	@Override
-	public void onConnectionFailed(ConnectionResult arg0) {
-		// TODO Auto-generated method stub
-
-	}
+	
 
 	@Override
 	public void onConnected(Bundle arg0) {
@@ -347,10 +336,22 @@ public class TraffTab extends FragmentActivity
 			startLocationUpdates();
 		}
 	}
+	
+	private void loadTrafficLayer(){
+		
+	}
+
+	@Override
+	public void onConnectionFailed(ConnectionResult arg0) {
+		// TODO Auto-generated method stub
+		
+	}
 
 	@Override
 	public void onConnectionSuspended(int arg0) {
 		// TODO Auto-generated method stub
-
+		
 	}
+
+	
 }

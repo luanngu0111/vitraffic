@@ -11,7 +11,6 @@ import java.io.OutputStream;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -209,9 +208,6 @@ public class ServerUtil {
 	 * @return
 	 */
 	public String Download(String filename) {
-		if (filename.contains(".csv")) {
-			return null;
-		}
 		String rs = "";
 		String root = IConstants.ROOT_PATH;
 		String filepath = root + "/" + filename;
