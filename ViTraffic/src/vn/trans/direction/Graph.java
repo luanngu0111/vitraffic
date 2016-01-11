@@ -20,6 +20,10 @@ public class Graph {
 		return graph;
 	}
 
+	public static Graph getGraph() {
+		return graph;
+	}
+
 	public HashMap<String, Vertex> getVertexes() {
 		return vertexes;
 	}

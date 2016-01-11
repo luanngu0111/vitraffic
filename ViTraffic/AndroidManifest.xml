@@ -60,10 +60,7 @@
         <!-- <receiver android:name="vn.trans.track.AlarmUploadService" > -->
         <!-- </receiver> -->
 
-        <activity
-            android:name=".TrackerTab"
-            android:label="@string/title_activity_tracker_tab" >
-        </activity>
+        
         <activity
             android:name=".DirectionTab"
             android:label="@string/title_activity_direction_tab" >

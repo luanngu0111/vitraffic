@@ -1,9 +1,13 @@
 package vn.trans.vitraffic;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.net.ftp.FTPFile;
+import org.xmlpull.v1.XmlPullParserException;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -20,46 +24,40 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.kml.KmlLayer;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.SystemClock;
+import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
-import vn.trans.entities.Location;
 import vn.trans.entities.Road;
-import vn.trans.ftpserver.ServerUtil;
-import vn.trans.traff.AlarmDownloadService;
 import vn.trans.utils.IConstants;
+import vn.trans.utils.IURLConst;
 
 public class TraffTab extends FragmentActivity
 		implements ConnectionCallbacks, OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
 	private static GoogleMap map;
 	boolean onCurrentTab = false;
-	private PendingIntent mAlarmIntent;
-	private AlarmManager alarmMan;
 	GoogleApiClient mGoogleApiClient;
 	boolean mRequestingLocationUpdates = true;
 	boolean init = true;
+	private Handler handler;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_traff_tab);
 		mRequestingLocationUpdates = true;
+		handler = new Handler();
 		initilizeMap();
 		buildGoogleApiClient();
 		createLocationRequest();
 		init = true;
-		Intent launchIntent = new Intent(this, AlarmDownloadService.class);
-		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, 0);
+
 	}
 
 	protected synchronized void buildGoogleApiClient() {
@@ -100,30 +98,51 @@ public class TraffTab extends FragmentActivity
 		if (map == null) {
 			Toast.makeText(getApplicationContext(), "Sorry! unable to create maps", Toast.LENGTH_SHORT).show();
 		}
+
 	}
 
 	@Override
 	protected void onResume() {
 		// TODO Auto-generated method stub
-		alarmMan = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-		alarmMan.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 2000,
-				IConstants.ALARM_INTERVAL, mAlarmIntent);
+
 		if (mGoogleApiClient.isConnected() == false) {
 			mGoogleApiClient.connect();
 		}
 		if (mGoogleApiClient.isConnected() && mRequestingLocationUpdates) {
 			startLocationUpdates();
 		}
+
+		this.runOnUiThread(new Runnable() {
+
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				File kml = new File(IConstants.ROOT_PATH + "/map" + 2 + ".kml");
+				if (kml.exists()) {
+					try {
+						KmlLayer layer = new KmlLayer(map, new FileInputStream(kml), getApplicationContext());
+						layer.addLayerToMap();
+					} catch (FileNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (XmlPullParserException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+				}
+			}
+		});
 		super.onResume();
 	}
 
 	@Override
 	protected void onStop() {
 		// TODO Auto-generated method stup
-		Intent cancelIntent = new Intent(this, AlarmDownloadService.class);
-		cancelIntent.putExtra("cancel", "cancel");
-		mAlarmIntent = PendingIntent.getBroadcast(this, 0, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-		alarmMan.cancel(mAlarmIntent);
+
 		super.onStop();
 	}
 
@@ -131,89 +150,6 @@ public class TraffTab extends FragmentActivity
 	protected void onPause() {
 		// TODO Auto-generated method stub
 		super.onPause();
-	}
-
-	/**
-	 * Lop nay dung de thuc hien Download file tu server o che do chay ngam.
-	 *
-	 */
-	public static class DownloadTask extends AsyncTask<Void, Road, Void> {
-		@Override
-		protected void onPreExecute() {
-			// TODO Auto-generated method stub
-			if (map != null)
-				map.clear();
-			Log.i("Tag", "Start Download ...");
-			super.onPreExecute();
-		}
-
-		/*
-		 * Moi khi tai ve mot file thi thuc hien ve traffic len ban do.
-		 */
-		@Override
-		protected void onProgressUpdate(Road... values) {
-			// TODO Auto-generated method stub
-			DrawTrafficRoad(values[0]);
-			super.onProgressUpdate(values);
-		}
-
-		@Override
-		protected void onPostExecute(Void result) {
-			// TODO Auto-generated method stub
-			Log.i("Tag", "Download finish...");
-			super.onPostExecute(result);
-		}
-
-		@Override
-		protected Void doInBackground(Void... params) {
-			// TODO Auto-generated method stub
-			boolean status = false;
-			ServerUtil server = ServerUtil.createServer();
-			status = server.serverConnect(IConstants.USERNAME, IConstants.PASSWORD, IConstants.PORT);
-			if (status == true) {
-				/*
-				 * Gia tri trong getAllFile = False la lay tat ca Neu = True la
-				 * lay theo khoang thoi gian duoc dinh truoc trong file
-				 * IConstants
-				 */
-				FTPFile[] files = server.getAllFile(false);
-				if (files == null)
-					return null;
-				for (FTPFile f : files) {
-					if (f.isDirectory())
-						continue;
-					// Log.v("file",
-					// ServerUtil.converDate2String(f.getTimestamp()) + " " +
-					// f.getName());
-					String json = server.Download(f.getName());
-					if (json != null) {
-						try {
-							Location loc = new Location();
-							loc.conv2Obj(json);
-							Road r = new Road();
-							r.setArr_paths(loc.getArr_coord());
-							r.setAvg_speed(loc.getSpeed());
-							publishProgress(r);
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-
-					}
-				}
-				Log.d("server", "Connection success files " + files.length);
-			} else {
-				Log.d("server", "Connection failed files");
-			}
-			return null;
-		}
-
-		@Override
-		protected void onCancelled() {
-			// TODO Auto-generated method stub
-			Log.i("Tag", "Cancel Download ...");
-			super.onCancelled();
-		}
-
 	}
 
 	/**
@@ -326,8 +262,6 @@ public class TraffTab extends FragmentActivity
 
 	}
 
-	
-
 	@Override
 	public void onConnected(Bundle arg0) {
 		// TODO Auto-generated method stub
@@ -336,22 +270,87 @@ public class TraffTab extends FragmentActivity
 			startLocationUpdates();
 		}
 	}
-	
-	private void loadTrafficLayer(){
-		
+
+	public void loadTrafficLayer() {
+
+		// TODO Auto-generated method stub
+		for (int i = 1; i <= IURLConst.NUM_FILES; i++) {
+			File kml = new File(IConstants.ROOT_PATH + "/map" + i + ".kml");
+			if (kml.exists()) {
+				try {
+					KmlLayer layer = new KmlLayer(map, new FileInputStream(kml), getApplicationContext());
+					layer.addLayerToMap();
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (XmlPullParserException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
+		}
+
+	}
+
+	public class LoadTraffic extends AsyncTask<Object, Object, Object> {
+
+		@Override
+		protected Object doInBackground(Object... params) {
+			// TODO Auto-generated method stub
+			for (int i = 2; i <= IURLConst.NUM_FILES; i++) {
+				File kml = new File(IConstants.ROOT_PATH + "/map" + i + ".kml");
+				if (kml.exists()) {
+					try {
+						KmlLayer layer = new KmlLayer(map, new FileInputStream(kml), getApplicationContext());
+						layer.addLayerToMap();
+					} catch (FileNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (XmlPullParserException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+				}
+			}
+			return null;
+		}
+
+		@Override
+		protected void onProgressUpdate(Object... values) {
+			// TODO Auto-generated method stub
+			KmlLayer layer = (KmlLayer) values[0];
+			try {
+				layer.addLayerToMap();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (XmlPullParserException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			super.onProgressUpdate(values);
+		}
+
 	}
 
 	@Override
 	public void onConnectionFailed(ConnectionResult arg0) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void onConnectionSuspended(int arg0) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
-	
 }

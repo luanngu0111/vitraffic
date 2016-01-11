@@ -1,10 +1,11 @@
 package vn.trans.utils;
 
 public interface IURLConst {
-	public static String URL_FIND_WAY = "http://vitraffic.byethost12.com/find_way.php";
-	public static String URL_TRAFFIC =  "http://vitraffic.byethost12.com/people.txt";
-	public static String URL_NEAREST_NODE = "http://vitraffic.byethost12.com/find_node_nearest.php";
-	public static String URL_UPDATE_TRAFF = "http://vitraffic.byethost12.com/update_traffic.php";
+	public static String URL_FIND_WAY = "http://vitraffic-byethost.rhcloud.com/find_way.php";
+	public static String URL_TRAFFIC = "http://vitraffic-byethost.rhcloud.com/traffic";
+	public static String URL_NEAREST_NODE = "http://vitraffic-byethost.rhcloud.com/find_node_nearest.php";
+	public static String URL_UPDATE_TRAFF = "http://vitraffic-byethost.rhcloud.com/update_traffic.php";
+	public static int NUM_FILES = 2;
 	public static String TAG_SUCCESS = "success";
 	public static String TAG_TRAFFIC = "traffic";
 	public static String TAG_AMOUNT = "amount";

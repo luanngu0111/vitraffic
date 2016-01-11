@@ -5,7 +5,7 @@ public interface IConstants {
 	public static String FORMAT_DATE = "dd/MM/yyyy HH:mm:ss";
 	public static String SPEC_FORM_DATE = "EEE MMM dd HH:mm:ss zzz yyyy";
 	public static long REQUEST_TRAFF = 3600000 + 11 * 3600000;
-	public static long ALARM_INTERVAL = 900000;
+	public static long ALARM_INTERVAL = 300000;
 	public static int INTERVAL = 7000; // time to request location mms
 	public static int FAST_INTV = 5000; // fast time to request location mms
 	public static String KEY_API_SERV = "AIzaSyAjg-AyQtRQTb472UPe9TrLQU-ADlzWYKw";

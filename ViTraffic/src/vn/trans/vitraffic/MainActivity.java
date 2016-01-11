@@ -1,20 +1,35 @@
 package vn.trans.vitraffic;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.TabActivity;
+import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.SystemClock;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TabHost;
 import android.widget.TabHost.TabSpec;
+import vn.trans.traff.AlarmDownloadService;
+import vn.trans.utils.IConstants;
+import vn.trans.utils.IURLConst;
 
 public class MainActivity extends TabActivity {
+	private PendingIntent mAlarmIntent;
+	private AlarmManager alarmMan;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
+
 		TabHost tabHost = getTabHost();
 
 		// Tab for tracking
@@ -28,7 +43,7 @@ public class MainActivity extends TabActivity {
 		Intent traffIntent = new Intent(this, TraffTab.class);
 		traffSpec.setIndicator("Traffic");
 		traffSpec.setContent(traffIntent);
-		
+
 		// Tab for Direction
 		TabSpec dirSpec = tabHost.newTabSpec("direct");
 		Intent dirIntent = new Intent(this, DirectionTab.class);
@@ -39,8 +54,18 @@ public class MainActivity extends TabActivity {
 		tabHost.addTab(trackSpec);
 		tabHost.addTab(traffSpec);
 		tabHost.addTab(dirSpec);
-		
 
+		Intent launchIntent = new Intent(this, AlarmDownloadService.class);
+		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, 0);
+	}
+
+	@Override
+	protected void onResume() {
+		// TODO Auto-generated method stub
+		alarmMan = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+		alarmMan.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 2000,
+				IConstants.ALARM_INTERVAL, mAlarmIntent);
+		super.onResume();
 	}
 
 	@Override
@@ -50,7 +75,6 @@ public class MainActivity extends TabActivity {
 		return true;
 	}
 
-	
 	@Override
 	protected void onPause() {
 		// TODO Auto-generated method stub
@@ -60,8 +84,13 @@ public class MainActivity extends TabActivity {
 	@Override
 	protected void onStop() {
 		// TODO Auto-generated method stub
+		Intent cancelIntent = new Intent(this, AlarmDownloadService.class);
+		cancelIntent.putExtra("cancel", "cancel");
+		mAlarmIntent = PendingIntent.getBroadcast(this, 0, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+		alarmMan.cancel(mAlarmIntent);
 		super.onStop();
 	}
+
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// Handle action bar item clicks here. The action bar will
@@ -73,4 +102,9 @@ public class MainActivity extends TabActivity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
+	/**
+	 * Lop nay dung de thuc hien Download file tu server o che do chay ngam.
+	 *
+	 */
+
 }
