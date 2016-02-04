@@ -5,15 +5,15 @@ import java.util.List;
 
 public class Graph {
 	private final HashMap<String, Vertex> vertexes;
-	private final List<Edge> edges;
+	private final HashMap<String, Edge> edges;
 	private static Graph graph;
 
-	private Graph(HashMap<String, Vertex> vertexes, List<Edge> edges) {
+	private Graph(HashMap<String, Vertex> vertexes, HashMap<String, Edge>edges) {
 		this.vertexes = vertexes;
 		this.edges = edges;
 	}
 
-	public static Graph createGraph(HashMap<String, Vertex> vertexes, List<Edge> edges) {
+	public static Graph createGraph(HashMap<String, Vertex> vertexes, HashMap<String, Edge> edges) {
 		if (graph == null) {
 			graph = new Graph(vertexes, edges);
 		}
@@ -28,7 +28,7 @@ public class Graph {
 		return vertexes;
 	}
 
-	public List<Edge> getEdges() {
+	public HashMap<String, Edge> getEdges() {
 		return edges;
 	}
 }

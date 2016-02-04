@@ -1,6 +1,14 @@
 package vn.trans.vitraffic;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -19,6 +27,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
@@ -28,10 +37,10 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.Toast;
-import vn.trans.direction.FastestPath;
-import vn.trans.direction.FastestPath.FetchingData;
-import vn.trans.direction.Graph;
+import vn.trans.direction.FastPath;
+import vn.trans.json.JSONParser;
 import vn.trans.utils.IConstants;
+import vn.trans.utils.IURLConst;
 
 public class DirectionTab extends FragmentActivity
 		implements ConnectionCallbacks, OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
@@ -57,7 +66,7 @@ public class DirectionTab extends FragmentActivity
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
-				GetFastestPath(directions[0], directions[1]);
+				GetFastestPath2(directions[0], directions[1]);
 			}
 		});
 		bnSwap = (Button) findViewById(R.id.bnSwap);
@@ -138,6 +147,9 @@ public class DirectionTab extends FragmentActivity
 			PolylineOptions po = new PolylineOptions();
 			po.addAll(points);
 			map.addPolyline(po.color(0xff0000ff).visible(true));
+			Log.i("fast", "Drew");
+		} else {
+			Toast.makeText(this, "Not found fastest way. Common way is recommended", Toast.LENGTH_LONG).show();
 		}
 	}
 
@@ -147,9 +159,75 @@ public class DirectionTab extends FragmentActivity
 	 * Get fastest path function
 	 */
 	private void GetFastestPath(LatLng start, LatLng end) {
-		FastestPath fast = new FastestPath(getApplicationContext());
-		List<LatLng> points = fast.getFastestPath(start, end);
+		FastPath fast = FastPath.createPath();
+		List<LatLng> points;
+		points = fast.getFastPath(start, end);
 		displayResult(points);
+		// fast.getFastPath(start, end);
+
+	}
+
+	/**
+	 * @param start
+	 *            id cua nut start
+	 * @param end
+	 *            id cua nut end
+	 */
+	private void GetFastestPath2(LatLng src, LatLng dest) {
+		// find nearest src nodes nodes.lat < src.lat && nodes.lon <src.lon
+		String start = FastPath.getNearestLoc(src);
+		// find nearest dest nodes nodeslat < dest.lat && nodes.lon <dest.lon
+		String end = FastPath.getNearestLoc(dest);
+		List<LatLng> points;
+		try {
+			points = new FindPath().execute(new String[] { start, end }).get();
+			displayResult(points);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} // fast.getFastPath(start, end);
+
+	}
+
+	public class FindPath extends AsyncTask<Object, Object, List<LatLng>> {
+
+		@Override
+		protected List<LatLng> doInBackground(Object... params) {
+			// TODO Auto-generated method stub
+
+			List<NameValuePair> param = new ArrayList<NameValuePair>();
+			param.add(new BasicNameValuePair("start", "Node_" + params[0].toString()));
+			param.add(new BasicNameValuePair("end", "Node_" + params[1].toString()));
+
+			JSONParser jParser = new JSONParser();
+			JSONObject json = jParser.makeHttpRequest(IURLConst.URL_FAST_PATH, "GET", param);
+			int success;
+			try {
+
+				success = json.getInt(IURLConst.TAG_SUCCESS);
+
+				if (success == 1) {
+
+					JSONArray jarr = json.getJSONArray(IURLConst.TAG_PATH);
+					List<LatLng> paths = new ArrayList<LatLng>();
+
+					for (int i = 0; i < jarr.length(); i++) {
+						JSONObject jso = jarr.getJSONObject(i);
+						LatLng l = new LatLng(jso.getDouble("lat"), jso.getDouble("lon"));
+						paths.add(l);
+					}
+					return paths;
+				}
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			return null;
+		}
 
 	}
 
@@ -175,9 +253,8 @@ public class DirectionTab extends FragmentActivity
 	@Override
 	protected void onResume() {
 		// TODO Auto-generated method stub
-		
-		
-		//Open Google map
+
+		// Open Google map
 		if (mGoogleApiClient.isConnected() == false) {
 			mGoogleApiClient.connect();
 		}

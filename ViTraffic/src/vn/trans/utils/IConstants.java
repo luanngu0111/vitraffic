@@ -5,7 +5,7 @@ public interface IConstants {
 	public static String FORMAT_DATE = "dd/MM/yyyy HH:mm:ss";
 	public static String SPEC_FORM_DATE = "EEE MMM dd HH:mm:ss zzz yyyy";
 	public static long REQUEST_TRAFF = 3600000 + 11 * 3600000;
-	public static long ALARM_INTERVAL = 300000;
+	public static long ALARM_INTERVAL = 3600000;
 	public static int INTERVAL = 7000; // time to request location mms
 	public static int FAST_INTV = 5000; // fast time to request location mms
 	public static String KEY_API_SERV = "AIzaSyAjg-AyQtRQTb472UPe9TrLQU-ADlzWYKw";
@@ -31,5 +31,10 @@ public interface IConstants {
 	public static String COLOR_ORANGE = "FFFF6600";
 	public static String COLOR_BLUE = "FF37D9FF";
 	public static String COLOR_GREEN = "FF00FF00";
+	public static int RED_CODE = 0xFFFF0000;
+	public static int ORANGE_CODE = 0xFFFF6600;
+	public static int BLUE_CODE = 0xFF37D9FF;
+	public static int GREEN_CODE = 0xFF00FF00;
+	
 
 }

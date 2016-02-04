@@ -4,9 +4,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.xmlpull.v1.XmlPullParserException;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -46,11 +51,16 @@ public class TraffTab extends FragmentActivity
 	boolean mRequestingLocationUpdates = true;
 	boolean init = true;
 	private Handler handler;
+	private static PolylineOptions pol = new PolylineOptions();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_traff_tab);
+		// WebView myWebView = (WebView) findViewById(R.id.webview);
+		// WebSettings webSettings = myWebView.getSettings();
+		// webSettings.setJavaScriptEnabled(true);
+		// myWebView.loadUrl("http://vitraffic-byethost.rhcloud.com/traffic/map.html");
 		mRequestingLocationUpdates = true;
 		handler = new Handler();
 		initilizeMap();
@@ -58,6 +68,8 @@ public class TraffTab extends FragmentActivity
 		createLocationRequest();
 		init = true;
 
+		 new LoadTraffic().execute();
+		// map.addPolyline(pol).setVisible(true);
 	}
 
 	protected synchronized void buildGoogleApiClient() {
@@ -93,7 +105,6 @@ public class TraffTab extends FragmentActivity
 		map.clear();
 		map.animateCamera(CameraUpdateFactory.zoomTo(5), 2000, null);
 		map.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(106, 10)));
-
 		// check if map is created successfully or not
 		if (map == null) {
 			Toast.makeText(getApplicationContext(), "Sorry! unable to create maps", Toast.LENGTH_SHORT).show();
@@ -112,30 +123,7 @@ public class TraffTab extends FragmentActivity
 			startLocationUpdates();
 		}
 
-		this.runOnUiThread(new Runnable() {
-
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				File kml = new File(IConstants.ROOT_PATH + "/map" + 2 + ".kml");
-				if (kml.exists()) {
-					try {
-						KmlLayer layer = new KmlLayer(map, new FileInputStream(kml), getApplicationContext());
-						layer.addLayerToMap();
-					} catch (FileNotFoundException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (XmlPullParserException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-
-				}
-			}
-		});
+		
 		super.onResume();
 	}
 
@@ -152,6 +140,17 @@ public class TraffTab extends FragmentActivity
 		super.onPause();
 	}
 
+	private static int getColor(double speed) {
+		if (speed >= 0 && speed < 5)
+			return IConstants.RED_CODE;
+		if (speed >= 5 && speed < 15)
+			return IConstants.ORANGE_CODE;
+		if (speed >= 15 && speed < 30)
+			return IConstants.BLUE_CODE;
+
+		return IConstants.GREEN_CODE;
+	}
+
 	/**
 	 * Thuc hien ve mot doan duong dua vao thong tin danh sach toa do va van
 	 * toc.
@@ -163,75 +162,75 @@ public class TraffTab extends FragmentActivity
 		LatLngBounds bounds = map.getProjection().getVisibleRegion().latLngBounds;
 		List<LatLng> paths = new ArrayList<LatLng>();
 		if (road != null) {
-			paths = road.getArr_paths();
+			paths.add(road.getPos_start());
+			paths.add(road.getPos_end());
 			if (paths != null) {
 				int speed = (int) road.getAvg_speed();
-				double hs_lat = 0.0;
-				double hs_long = 0.0;
+				// double hs_lat = 0.0;
+				// double hs_long = 0.0;
 				// Xac dinh mau dua tren van toc.
-				if (speed >= IConstants.COLORS.length) {
-					color = IConstants.COLORS[IConstants.COLORS.length - 1];
+				// color = Integer.parseInt(getColor(speed), 16);
+				color = getColor(speed);
+
+				LatLng start = paths.get(0);
+				LatLng end = paths.get(1);
+				LatLng sideStart = null, sideEnd = null;
+				boolean neg = end.latitude < start.latitude;
+				if (neg) {
+					sideStart = new LatLng(start.latitude, start.longitude - IConstants.AUT_LONG);
+					sideEnd = new LatLng(end.latitude, end.longitude - IConstants.AUT_LONG);
 				} else {
-					color = IConstants.COLORS[speed];
+					sideStart = new LatLng(start.latitude, start.longitude + IConstants.AUT_LONG);
+					sideEnd = new LatLng(end.latitude, end.longitude + IConstants.AUT_LONG);
 				}
-				for (int i = 1; i < paths.size(); i++) {
-					LatLng start = paths.get(i - 1);
-					LatLng end = paths.get(i);
-					LatLng sideStart = null, sideEnd = null;
-					boolean neg = end.latitude < start.latitude;
-					if (neg) {
-						sideStart = new LatLng(start.latitude, start.longitude - IConstants.AUT_LONG);
-						sideEnd = new LatLng(end.latitude, end.longitude - IConstants.AUT_LONG);
-					} else {
-						sideStart = new LatLng(start.latitude, start.longitude + IConstants.AUT_LONG);
-						sideEnd = new LatLng(end.latitude, end.longitude + IConstants.AUT_LONG);
-					}
 
-					if (bounds.contains(end)) // Kiem tra toa do co nam
-												// trong
-												// vung ban do dang hien thi
-												// hay
-												// khong
-					{
-						map.addPolyline(new PolylineOptions().add(sideStart, sideEnd).width(6).color(color))
-								.setVisible(true);
-						Log.v("draw", end.latitude + " " + end.longitude);
-					}
+				if (bounds.contains(end) || true) // Kiem tra toa do co nam
+				// trong
+				// vung ban do dang hien thi
+				// hay
+				// khong
+				{
 
+					// pol.add(sideStart, sideEnd).width(6).color(color);
+					map.addPolyline(new PolylineOptions().add(sideStart, sideEnd).width(6).color(color))
+							.setVisible(true);
+					Log.v("draw", end.latitude + " " + end.longitude);
 				}
-				Log.v("draw", "finish line");
+
+				Log.v("draw", "finish 1 line");
 			}
 		}
 	}
 
-	public void DrawTrafficStatus(Road[] roads) {
-		int color = 0;
-		LatLng start = new LatLng(0, 0);
-		LatLng end = new LatLng(0, 0);
-		if (roads != null) {
-			for (Road road : roads) {
-				List<LatLng> paths = new ArrayList<LatLng>();
-				if (road == null)
-					continue;
-				paths = road.getArr_paths();
-				if (paths != null && paths.size() > 0) {
-					start = paths.get(0);
-					int speed = (int) road.getAvg_speed();
-					if (speed > 20) {
-						color = IConstants.COLORS[IConstants.COLORS.length - 1];
-					} else {
-						color = IConstants.COLORS[speed];
-					}
-					for (int i = 1; i < paths.size(); i++) {
-						end = paths.get(i);
-						Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(8).color(color));
-						line.setVisible(true);
-						Log.v("draw", "Drawing");
-					}
-				}
-			}
-		}
-	}
+	// public void DrawTrafficStatus(Road[] roads) {
+	// int color = 0;
+	// LatLng start = new LatLng(0, 0);
+	// LatLng end = new LatLng(0, 0);
+	// if (roads != null) {
+	// for (Road road : roads) {
+	// List<LatLng> paths = new ArrayList<LatLng>();
+	// if (road == null)
+	// continue;
+	// paths = road.getArr_paths();
+	// if (paths != null && paths.size() > 0) {
+	// start = paths.get(0);
+	// int speed = (int) road.getAvg_speed();
+	// if (speed > 20) {
+	// color = IConstants.COLORS[IConstants.COLORS.length - 1];
+	// } else {
+	// color = IConstants.COLORS[speed];
+	// }
+	// for (int i = 1; i < paths.size(); i++) {
+	// end = paths.get(i);
+	// Polyline line = map.addPolyline(new PolylineOptions().add(start,
+	// end).width(8).color(color));
+	// line.setVisible(true);
+	// Log.v("draw", "Drawing");
+	// }
+	// }
+	// }
+	// }
+	// }
 
 	LocationRequest mLocationRequest;
 
@@ -296,46 +295,41 @@ public class TraffTab extends FragmentActivity
 
 	}
 
-	public class LoadTraffic extends AsyncTask<Object, Object, Object> {
+	public static class LoadTraffic extends AsyncTask<Object, Road, Object> {
 
 		@Override
 		protected Object doInBackground(Object... params) {
 			// TODO Auto-generated method stub
-			for (int i = 2; i <= IURLConst.NUM_FILES; i++) {
-				File kml = new File(IConstants.ROOT_PATH + "/map" + i + ".kml");
-				if (kml.exists()) {
-					try {
-						KmlLayer layer = new KmlLayer(map, new FileInputStream(kml), getApplicationContext());
-						layer.addLayerToMap();
-					} catch (FileNotFoundException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (XmlPullParserException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+			File fmap = null;
+			for (int i = 1; (fmap = new File(IConstants.ROOT_PATH + "/map" + i + ".json")).exists(); i++) {
+			//for (int i=80 ; i<=IURLConst.NUM_FILES ; i++){
+				Log.i("LoadTraff", i+"");
+//				fmap = new File(IConstants.ROOT_PATH + "/traffic" + i + ".json");
+				try {
+					String jsonStr = IOUtils.toString(new FileInputStream(fmap));
+					List<Road> roads = new ArrayList<Road>();
+					roads = Road.conv2Object(jsonStr);
+					for (Road road : roads) {
+						publishProgress(road);
 					}
-
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
+
 			}
+
+			
 			return null;
 		}
 
 		@Override
-		protected void onProgressUpdate(Object... values) {
+		protected void onProgressUpdate(Road... values) {
 			// TODO Auto-generated method stub
-			KmlLayer layer = (KmlLayer) values[0];
-			try {
-				layer.addLayerToMap();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (XmlPullParserException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			DrawTrafficRoad(values[0]);
 			super.onProgressUpdate(values);
 		}
 

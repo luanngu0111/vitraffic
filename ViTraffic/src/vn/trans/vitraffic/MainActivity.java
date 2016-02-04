@@ -56,7 +56,7 @@ public class MainActivity extends TabActivity {
 		tabHost.addTab(dirSpec);
 
 		Intent launchIntent = new Intent(this, AlarmDownloadService.class);
-		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, 0);
+		mAlarmIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, launchIntent, 0);
 	}
 
 	@Override

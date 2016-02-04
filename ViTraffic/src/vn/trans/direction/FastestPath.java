@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
+import org.hamcrest.core.IsNull;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -43,7 +44,7 @@ import vn.trans.utils.IURLConst;
 
 public class FastestPath {
 	private static HashMap<String, Vertex> nodes;
-	private static List<Edge> edges;
+	private static HashMap<String, Edge> edges;
 	public Context context;
 	private static Graph graph;
 
@@ -103,6 +104,7 @@ public class FastestPath {
 		String node_id = null;
 		try {
 			node_id = new NearestNode().execute(new Double[] { src.latitude, src.longitude }).get();
+
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -123,13 +125,13 @@ public class FastestPath {
 		Vertex end = new Vertex("", "");
 		// find nearest src nodes nodes.lat < src.lat && nodes.lon <src.lon
 		String start_node = getNearestLoc(src);
-		// find nearest dest nodes nodes.lat < dest.lat && nodes.lon
+		// find nearest dest nodes nodeslat < dest.lat && nodes.lon
 		// <dest.lon
 		String end_node = getNearestLoc(dest);
-
 		start = nodes.get(start_node);
 		end = nodes.get(end_node);
 		// Set source location
+		Log.i("fast", nodes.size() + " not null " + edges.size());
 		dijkstra.execute(start);
 
 		// Set destination location and get fastest path
@@ -140,15 +142,18 @@ public class FastestPath {
 				// System.out.println(vertex);
 				fastPath.add(vertex.getLocation());
 			}
-			Log.i("fast", String.valueOf(path.size()));
+			Log.i("fast", start + String.valueOf(path.size()) + end);
 			return fastPath;
 		}
+		Log.i("fast", "null");
 		return null;
 	}
 
 	private static void addLane(String laneId, String sourceLocNo, String destLocNo, double speed) {
-		Edge lane = new Edge(laneId, nodes.get(sourceLocNo), nodes.get(destLocNo), speed);
-		edges.add(lane);
+		Log.i("fast", "Destination " + nodes.get(sourceLocNo) + " " + nodes.get(destLocNo));
+		Edge lane = new Edge("Edge_" + laneId, nodes.get(sourceLocNo), nodes.get(destLocNo), speed);
+		edges.put(laneId, lane);
+
 	}
 
 	public static class FetchingData extends AsyncTask<String, Integer, String> {
@@ -167,80 +172,91 @@ public class FastestPath {
 			// TODO Auto-generated method stub
 			if (dialog != null) {
 				dialog.setMessage("Doing something, please wait.");
-				dialog.setMax(100);
-				dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+				
 				dialog.show();
 			}
 			super.onPreExecute();
 		}
 
 		@Override
-		protected String doInBackground(String... pr) {
+		protected String doInBackground(String... params) {
 			// TODO Auto-generated method stub
-			android.os.Debug.waitForDebugger();
-			String rs = "";
-			String urlTraffic = IURLConst.URL_TRAFFIC;
-			JSONParser jParser = new JSONParser();
-			List<NameValuePair> params = new ArrayList<NameValuePair>();
-			for (int j = 1; j <= IURLConst.NUM_FILES; j++) {
-				String path = IConstants.ROOT_PATH + "/traffic" + j + ".json";
-				File file = new File(path);
-				String jsonStr = "{}";
-				JSONObject json = null;
-				try {
-					jsonStr = IOUtils.toString(new FileInputStream(file));
-					json = new JSONObject(jsonStr);
-				} catch (FileNotFoundException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-				rs = json.toString().substring(0, 100);
-				double avg_speed = 0.0;
-				String start = "", end = "";
-				LatLng start_loc = null;
-				nodes = new HashMap<String, Vertex>();
-				edges = new ArrayList<Edge>();
-				// Loop result to put vertex (nodes) value (id, name, coord)
-				try {
-					int success = json.getInt(IURLConst.TAG_SUCCESS);
-					if (success == 1) {
-						JSONArray traff_arr = json.getJSONArray(IURLConst.TAG_TRAFFIC);
-						for (int i = 0; i < traff_arr.length(); i++) {
-							JSONObject w = traff_arr.getJSONObject(i);
-							start = w.getString(IURLConst.TAG_START);
-							end = w.getString(IURLConst.TAG_END);
-							start_loc = new LatLng(w.getDouble(IURLConst.TAG_START_LAT),
-									w.getDouble(IURLConst.TAG_START_LON));
-							new LatLng(w.getDouble(IURLConst.TAG_END_LAT), w.getDouble(IURLConst.TAG_END_LON));
-							avg_speed = w.getDouble(IURLConst.TAG_AVG_SPEED);
-							w.getInt(IURLConst.TAG_AMOUNT);
-							Vertex location = new Vertex(start, "Node_" + start, start_loc);
-							nodes.put(start, location);
-							// Loop result array to put value (name, start, end,
-							// avg_speed)
-							addLane("Edge_" + start + end, start, end, avg_speed);
-
-						}
-						publishProgress(4);
-					}
-					Log.i("fetching", rs);
-				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-			}
-			// if (!nodes.isEmpty() && !edges.isEmpty())
-			Graph.createGraph(nodes, edges);
+			FastPath path = FastPath.createPath();
 			return null;
 		}
+//		@Override
+//		protected String doInBackground(String... pr) {
+//			// TODO Auto-generated method stub
+//			// android.os.Debug.waitForDebugger();
+//			String rs = "";
+//			// String urlTraffic = IURLConst.URL_TRAFFIC;
+//			// JSONParser jParser = new JSONParser();
+//			// List<NameValuePair> params = new ArrayList<NameValuePair>();
+//			nodes = new HashMap<String, Vertex>();
+//			edges = new HashMap<String, Edge>();
+//			for (int j = 1; j <= IURLConst.NUM_FILES; j++) {
+//				String path = IConstants.ROOT_PATH + "/traffic" + j + ".json";
+//				File file = new File(path);
+//				String jsonStr = "{}";
+//				JSONObject json = null;
+//				try {
+//					jsonStr = IOUtils.toString(new FileInputStream(file));
+//					json = new JSONObject(jsonStr);
+//				} catch (FileNotFoundException e1) {
+//					// TODO Auto-generated catch block
+//					e1.printStackTrace();
+//				} catch (IOException e1) {
+//					// TODO Auto-generated catch block
+//					e1.printStackTrace();
+//				} catch (JSONException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//
+//				rs = json.toString().substring(0, 100);
+//				double avg_speed = 0.0;
+//				String start = "", end = "";
+//				LatLng start_loc = null;
+//				LatLng end_loc = null;
+//				// Loop result to put vertex (nodes) value (id, name, coord)
+//				try {
+//					int success = 1;// json.getInt(IURLConst.TAG_SUCCESS);
+//					if (success == 1) {
+//						JSONArray traff_arr = json.getJSONArray(IURLConst.TAG_TRAFFIC);
+//						for (int i = 0; i < traff_arr.length(); i++) {
+//							JSONObject w = traff_arr.getJSONObject(i);
+//							start = w.getString(IURLConst.TAG_START);
+//							end = w.getString(IURLConst.TAG_END);
+//							start_loc = new LatLng(w.getDouble(IURLConst.TAG_START_LAT),
+//									w.getDouble(IURLConst.TAG_START_LON));
+//							end_loc = new LatLng(w.getDouble(IURLConst.TAG_END_LAT),
+//									w.getDouble(IURLConst.TAG_END_LON));
+//							avg_speed = w.getDouble(IURLConst.TAG_AVG_SPEED);
+//							w.getInt(IURLConst.TAG_AMOUNT);
+//							Vertex location = new Vertex(start, "Node_" + start, start_loc);
+//							Vertex location2 = new Vertex(end, "Node_" + end, end_loc);
+//							if (!nodes.containsKey(end))
+//								nodes.put(end, location2);
+//							if (!nodes.containsKey(start))
+//								nodes.put(start, location);
+//							// Loop result array to put value (name, start, end,
+//							// avg_speed)
+//							addLane(start + end, start, end, avg_speed);
+//
+//						}
+//						publishProgress(4);
+//					}
+//					Log.i("fetching", rs);
+//				} catch (JSONException e) {
+//					// TODO Auto-generated catch block
+//					Log.e("fetching", e.getMessage());
+//				}
+//
+//			}
+//			// if (!nodes.isEmpty() && !edges.isEmpty())
+//			Graph.createGraph(nodes, edges);
+//			return null;
+//		}
 
 		@Override
 		protected void onProgressUpdate(Integer... values) {
@@ -254,7 +270,7 @@ public class FastestPath {
 		@Override
 		protected void onPostExecute(String result) {
 			// TODO Auto-generated method stub
-			graph = Graph.getGraph();
+			//graph = Graph.getGraph();
 			if (dialog != null && dialog.isShowing()) {
 				dialog.dismiss();
 			}
@@ -263,10 +279,12 @@ public class FastestPath {
 		}
 	}
 
-	private void addLane(String laneId, int sourceLocNo, int destLocNo, int duration) {
-		Edge lane = new Edge(laneId, nodes.get(sourceLocNo), nodes.get(destLocNo), duration);
-		edges.add(lane);
-	}
+	// private void addLane(String laneId, int sourceLocNo, int destLocNo, int
+	// duration) {
+	// Edge lane = new Edge(laneId, nodes.get(sourceLocNo),
+	// nodes.get(destLocNo), duration);
+	// edges.add(lane);
+	// }
 
 	public class NearestNode extends AsyncTask<Double, String, String> {
 

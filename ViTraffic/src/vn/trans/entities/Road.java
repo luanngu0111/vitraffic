@@ -1,7 +1,11 @@
 package vn.trans.entities;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.android.gms.maps.model.LatLng;
@@ -9,100 +13,60 @@ import com.google.android.gms.maps.model.LatLng;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import vn.trans.db.GISDbAdapter;
+import android.util.Log;
+import vn.trans.direction.Vertex;
 import vn.trans.json.JSONObj;
+import vn.trans.utils.IURLConst;
 
-public class Road extends JSONObj {
-	int id;
-	Coordinate coordStart;
-	Coordinate coordEnd;
-	List<LatLng> arr_paths;
+public class Road {
+	String id_start;
+	String id_end;
+	LatLng pos_start;
+	LatLng pos_end;
+	int amount;
 	double avg_speed;
-	int way_pos; // Way position
-	private static SQLiteDatabase database;
+	String color;
 
-	public Road(Context context) {
-		GISDbAdapter gisAdapter = new GISDbAdapter(context);
-		gisAdapter.open();
-		this.database = gisAdapter.getGISdatabase();
+	
 
+	public String getId_start() {
+		return id_start;
 	}
 
-	public Road() {
-		// TODO Auto-generated constructor stub
+	public void setId_start(String id_start) {
+		this.id_start = id_start;
 	}
 
-	public static List<Road> GetRoadList(Context context) {
-		GISDbAdapter gisAdapter = new GISDbAdapter(context);
-		gisAdapter.open();
-		database = gisAdapter.getGISdatabase();
-		Cursor cur = database.rawQuery("select * from ways_nodes, nodes where id=node_id", null);
-		int iwayid = cur.getColumnIndex("way_id");
-		int inodeid = cur.getColumnIndex("node_id");
-		int ilat = cur.getColumnIndex("lat");
-		int ilon = cur.getColumnIndex("lon");
-		int iwaypos = cur.getColumnIndex("way_pos");
-		int way_id = 0;
-		Road r = null;
-		for (cur.moveToFirst(); !cur.isAfterLast(); cur.moveToNext()) {
-			int way_id_curr = cur.getInt(iwayid);
-
-			int node_id = cur.getInt(inodeid);
-			double lat = cur.getDouble(ilat);
-			double lon = cur.getDouble(ilon);
-			int way_pos = cur.getInt(iwaypos);
-			if (way_id_curr != way_id) {
-				r = new Road();
-				
-
-			}
-			r.setId(way_id_curr);
-			r.arr_paths.add(new LatLng(lat, lon));
-			r.setAvg_speed(0.0);
-			r.setWay_pos(way_pos);
-
-		}
-		return null;
+	public String getId_end() {
+		return id_end;
 	}
 
-	public int getWay_pos() {
-		return way_pos;
+	public void setId_end(String id_end) {
+		this.id_end = id_end;
 	}
 
-	public void setWay_pos(int way_pos) {
-		this.way_pos = way_pos;
+	public LatLng getPos_start() {
+		return pos_start;
 	}
 
-	public List<LatLng> getArr_paths() {
-		return arr_paths;
+	public void setPos_start(LatLng pos_start) {
+		this.pos_start = pos_start;
 	}
 
-	public void setArr_paths(List<LatLng> arr_paths) {
-		this.arr_paths = arr_paths;
+	public LatLng getPos_end() {
+		return pos_end;
 	}
 
-	public int getId() {
-		return id;
+	public void setPos_end(LatLng pos_end) {
+		this.pos_end = pos_end;
 	}
 
-	public void setId(int id) {
-		this.id = id;
+	public int getAmount() {
+		return amount;
 	}
 
-	public Coordinate getCoordStart() {
-		return coordStart;
-	}
-
-	public void setCoordStart(Coordinate coordStart) {
-		this.coordStart = coordStart;
-	}
-
-	public Coordinate getCoordEnd() {
-		return coordEnd;
-	}
-
-	public void setCoordEnd(Coordinate coordEnd) {
-		this.coordEnd = coordEnd;
+	public void setAmount(int amount) {
+		this.amount = amount;
 	}
 
 	public double getAvg_speed() {
@@ -113,20 +77,49 @@ public class Road extends JSONObj {
 		this.avg_speed = avg_speed;
 	}
 
-	public void GenerateID() {
-
+	public String getColor() {
+		return color;
 	}
 
-	@Override
-	public JSONObject conv2JsonObj() {
-		// TODO Auto-generated method stub
-		return null;
+	public void setColor(String color) {
+		this.color = color;
 	}
 
-	@Override
-	public Object conv2Obj(String json) {
+	public Road() {
+		// TODO Auto-generated constructor stub
+	}
+
+	
+
+	
+	public static List<Road> conv2Object(String jsonStr) {
 		// TODO Auto-generated method stub
-		return null;
+		List<Road> roads = new ArrayList<Road>(); 
+		// Loop result to put vertex (nodes) value (id, name, coord)
+		try {
+			JSONObject json = new JSONObject(jsonStr);
+			int success = 1;// json.getInt(IURLConst.TAG_SUCCESS);
+			if (success == 1) {
+				JSONArray traff_arr = json.getJSONArray(IURLConst.TAG_TRAFFIC);
+				for (int i = 0; i < traff_arr.length(); i++) {
+					JSONObject w = traff_arr.getJSONObject(i);
+					Road r = new Road();
+					r.setId_start(w.getString(IURLConst.TAG_START));
+					r.setId_end(w.getString(IURLConst.TAG_END));
+					r.setPos_start(new LatLng(w.getDouble(IURLConst.TAG_START_LAT),
+							w.getDouble(IURLConst.TAG_START_LON)));
+					r.setPos_end(new LatLng(w.getDouble(IURLConst.TAG_END_LAT), w.getDouble(IURLConst.TAG_END_LON)));
+					r.setAvg_speed(w.getDouble(IURLConst.TAG_AVG_SPEED));
+					r.setAmount(w.getInt(IURLConst.TAG_AMOUNT));
+					r.setColor(w.getString(IURLConst.TAG_COLOR));
+					roads.add(r);
+				}
+			}
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return roads;
 	}
 
 }

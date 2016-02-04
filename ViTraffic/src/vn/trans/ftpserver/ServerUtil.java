@@ -187,7 +187,7 @@ public class ServerUtil {
 					Location loc = new Location();
 					loc.conv2Obj(json);
 					Road r = new Road();
-					r.setArr_paths(loc.getArr_coord());
+					//r.setArr_paths(loc.getArr_coord());
 					r.setAvg_speed(loc.getSpeed());
 					lroad.add(r);
 				}

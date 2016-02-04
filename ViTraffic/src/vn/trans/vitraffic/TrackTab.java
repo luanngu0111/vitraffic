@@ -4,8 +4,21 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response.Listener;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.JsonRequest;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
@@ -42,6 +55,8 @@ import vn.trans.track.RequestTrack;
 import vn.trans.track.ResponseTrack;
 import vn.trans.track.UpdateTracking;
 import vn.trans.utils.IConstants;
+import vn.trans.utils.IURLConst;
+import com.android.volley.Response.ErrorListener;
 
 public class TrackTab extends FragmentActivity
 		implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener {
@@ -74,12 +89,9 @@ public class TrackTab extends FragmentActivity
 		initilizeMap();
 		buildGoogleApiClient();
 		createLocationRequest();
-		Intent launchIntent = new Intent(this, AlarmUploadService.class);
-		mAlarmIntent = PendingIntent.getBroadcast(this, 0, launchIntent, 0);
 		bnStart = (Button) findViewById(R.id.bnStart);
 		bnStop = (Button) findViewById(R.id.bnStop);
 		bnDetail = (Button) findViewById(R.id.bnDetail);
-
 		bnStart.setOnClickListener(new View.OnClickListener() {
 
 			@Override
@@ -220,10 +232,6 @@ public class TrackTab extends FragmentActivity
 	@Override
 	protected void onResume() {
 		super.onResume();
-		AlarmManager man = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-		man.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), IConstants.ALARM_INTERVAL,
-				mAlarmIntent); // tu dong upload thong tin toa do nguoi dung len
-								// server theo chu ky dinh truoc.
 		if (mGoogleApiClient.isConnected() == false) {
 			mGoogleApiClient.connect();
 		}
@@ -347,8 +355,8 @@ public class TrackTab extends FragmentActivity
 				end = paths[i];
 				Log.v("points", String.format("(%f; %f)  (%f; %f)", end.latitude, end.longitude, paths[i].latitude,
 						paths[i].longitude));
-				
-				List<LatLng> point = new ArrayList<LatLng>(); 
+
+				List<LatLng> point = new ArrayList<LatLng>();
 				PolylineOptions po = new PolylineOptions();
 				po.addAll(point);
 				Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(8).color(0xff0000ff));
@@ -383,12 +391,98 @@ public class TrackTab extends FragmentActivity
 		double distance = mCurrentLocation.distanceTo(mPrevLocation) / 1000.0;
 		loc.setDistance(distance);
 		Log.i("speed", mCurrSpeed * 3.6 + "");
-		new UpdateTracking().execute(curr, mCurrSpeed * 3.6);
+		// new UpdateTracking().execute(curr, mCurrSpeed * 3.6);
+		TrackUpdate(curr, mCurrSpeed * 3.6);
 		// loc.setSpeed(mCurrSpeed * 3.6);
 		// loc.setCoord(curr);
 		// loc.setUser_id(android.os.Build.SERIAL);
 		// loc.setRoad_id(0);
 		// loc.saveToDb(curr, mCurrSpeed * 3.6);
+	}
+
+	private static RequestQueue mQueue;
+
+	public void TrackUpdate(LatLng curr, final double speed) {
+		mQueue = Volley.newRequestQueue(this);
+
+		String addr = String.format(IURLConst.URL_FIND_WAY + "?lat=%s&lon=%s", String.valueOf(curr.latitude),
+				String.valueOf(curr.longitude));
+		Log.v("url", addr);
+
+		StringRequest strRequest = new StringRequest(Request.Method.GET, addr, new Listener<String>() {
+
+			@Override
+			public void onResponse(String arg0) {
+				// TODO Auto-generated method stub
+				double avg_speed = 0.0;
+				String start = "", end = "";
+				int amount = 0;
+
+				try {
+					JSONObject json = new JSONObject(arg0);
+					Log.i("Track", json.toString());
+					int success = json.getInt(IURLConst.TAG_SUCCESS);
+					if (success == 1) {
+						JSONObject w = json.getJSONObject(IURLConst.TAG_WAY);
+						start = w.getString(IURLConst.TAG_START);
+						end = w.getString(IURLConst.TAG_END);
+						avg_speed = w.getDouble(IURLConst.TAG_AVG_SPEED);
+						amount = w.getInt(IURLConst.TAG_AMOUNT);
+						avg_speed = (avg_speed * amount + speed) / (++amount) * 1.0;
+					}
+					UpdateRequest(start, end, avg_speed, amount);
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+			}
+		}, new ErrorListener() {
+			@Override
+			public void onErrorResponse(VolleyError arg0) {
+				// TODO Auto-generated method stub
+				Log.v("response", arg0.toString());
+			}
+		});
+		mQueue.add(strRequest);
+	}
+
+	private String getColor(double speed) {
+		if (speed >= 0 && speed < 5)
+			return IConstants.COLOR_RED;
+		if (speed >= 5 && speed < 15)
+			return IConstants.COLOR_ORANGE;
+		if (speed >= 15 && speed < 30)
+			return IConstants.COLOR_BLUE;
+
+		return IConstants.COLOR_GREEN;
+	}
+
+	public void UpdateRequest(String start, String end, double avg_speed, int amount) {
+		Map<String, String> jsonParams = new HashMap<String, String>();
+		jsonParams.put("start", start);
+		jsonParams.put("end", end);
+		jsonParams.put("speed", String.valueOf(avg_speed));
+		jsonParams.put("amount", String.valueOf(amount));
+		jsonParams.put("color", getColor(avg_speed));
+		JsonObjectRequest jsReq = new JsonObjectRequest(IURLConst.URL_UPDATE_TRAFF, new JSONObject(jsonParams),
+				new Listener<JSONObject>() {
+
+					@Override
+					public void onResponse(JSONObject arg0) {
+						// TODO Auto-generated method stub
+
+					}
+				}, new ErrorListener() {
+
+					@Override
+					public void onErrorResponse(VolleyError arg0) {
+						// TODO Auto-generated method stub
+
+					}
+				});
+
+		mQueue.add(jsReq);
 	}
 
 	@Override

@@ -183,62 +183,7 @@ public class Location extends JSONObj {
 
 	}
 
-	public void saveToDb(LatLng position, double speed) {
-		String TAG_SUCCESS = "success";
-		String TAG_PRODUCTS = "way";
-		String TAG_AMOUNT = "amount";
-		String TAG_AVG_SPEED = "avg_speed";
-		String TAG_START = "start";
-		String TAG_END = "end";
-
-		String TAG_NAME = "name";
-		JSONParser jParser = new JSONParser();
-		HashMap<String, String> wayFound;
-		String urlFindWay = "http://vitraffic.byethost12.com/find_way.php";
-		List<NameValuePair> params = new ArrayList<NameValuePair>();
-		params.add(new BasicNameValuePair("lat", String.valueOf(position.latitude)));
-		params.add(new BasicNameValuePair("lon", String.valueOf(position.longitude)));
-
-		JSONObject json = jParser.makeHttpRequest(urlFindWay, "GET", params);
-		double avg_speed = 0.0;
-		int start=0, end=0;
-		int amount = 0;
-		try {
-			int success = json.getInt(TAG_SUCCESS);
-			if (success == 1) {
-				JSONObject w = json.getJSONObject("way");
-				start = w.getInt(TAG_START);
-				end = w.getInt(TAG_END);
-				avg_speed = w.getDouble(TAG_AVG_SPEED);
-				amount = w.getInt(TAG_AMOUNT);
-				avg_speed = (avg_speed * amount + speed) / (++amount) * 1.0;
-			}
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		String urlUpdate = "http://vitraffic.byethost12.com/update_traffic.php";
-		params = new ArrayList<NameValuePair>();
-		params.add(new BasicNameValuePair("start", String.valueOf(start)));
-		params.add(new BasicNameValuePair("end", String.valueOf(end)));
-		params.add(new BasicNameValuePair("speed", String.valueOf(avg_speed)));
-		params.add(new BasicNameValuePair("amount", String.valueOf(amount)));
-		
-		json = jParser.makeHttpRequest(urlUpdate, "GET", params);
-		try {
-			int success = json.getInt(TAG_SUCCESS);
-			if (success==1){
-				Log.v("Update Tracking", "Sucessfully");
-			} else {
-				Log.v("Update Tracking", "Failed");
-			}
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
-
+	
 	/**
 	 * Luu tru file duoi dang json.
 	 */
