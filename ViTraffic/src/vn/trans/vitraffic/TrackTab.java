@@ -441,7 +441,7 @@ public class TrackTab extends FragmentActivity
 			@Override
 			public void onErrorResponse(VolleyError arg0) {
 				// TODO Auto-generated method stub
-				Log.v("response", arg0.toString());
+				Log.v("Track", arg0.toString());
 			}
 		});
 		mQueue.add(strRequest);
@@ -459,29 +459,25 @@ public class TrackTab extends FragmentActivity
 	}
 
 	public void UpdateRequest(String start, String end, double avg_speed, int amount) {
-		Map<String, String> jsonParams = new HashMap<String, String>();
-		jsonParams.put("start", start);
-		jsonParams.put("end", end);
-		jsonParams.put("speed", String.valueOf(avg_speed));
-		jsonParams.put("amount", String.valueOf(amount));
-		jsonParams.put("color", getColor(avg_speed));
-		JsonObjectRequest jsReq = new JsonObjectRequest(IURLConst.URL_UPDATE_TRAFF, new JSONObject(jsonParams),
-				new Listener<JSONObject>() {
+		
+		String color = getColor(avg_speed);
+		String url = String.format(IURLConst.URL_UPDATE_TRAFF + "?start=%s&end=%s&speed=%s&amount=%d&color=%s", start,
+				end, String.valueOf(avg_speed), amount, color);
+		StringRequest jsReq = new StringRequest(Request.Method.GET, url, new Listener<String>() {
 
-					@Override
-					public void onResponse(JSONObject arg0) {
-						// TODO Auto-generated method stub
+			@Override
+			public void onResponse(String arg0) {
+				// TODO Auto-generated method stub
+				Log.i("Track", "Update " + arg0);
+			}
+		}, new ErrorListener() {
 
-					}
-				}, new ErrorListener() {
-
-					@Override
-					public void onErrorResponse(VolleyError arg0) {
-						// TODO Auto-generated method stub
-
-					}
-				});
-
+			@Override
+			public void onErrorResponse(VolleyError arg0) {
+				// TODO Auto-generated method stub
+				Log.i("Track", "Update Error :" + arg0.getMessage());
+			}
+		});
 		mQueue.add(jsReq);
 	}
 

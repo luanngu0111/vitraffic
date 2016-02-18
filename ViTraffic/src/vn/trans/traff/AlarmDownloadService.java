@@ -28,9 +28,7 @@ public class AlarmDownloadService extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context arg0, Intent arg1) {
 		// TODO Auto-generated method stub
-		mNotifyManager = (NotificationManager) arg0.getSystemService(Context.NOTIFICATION_SERVICE);
-		mBuilder = new NotificationCompat.Builder(arg0);
-		mBuilder.setContentTitle("Download").setContentText("Download in progress");
+		
 		dl = new DownloadTask(arg0);
 		dl.execute();
 //		new LoadTraffic().execute();
@@ -48,21 +46,7 @@ public class AlarmDownloadService extends BroadcastReceiver {
 
 		}
 
-		@Override
-		protected void onPreExecute() {
-			// TODO Auto-generated method stub
-			mBuilder.setProgress(100, 0, false);
-			mNotifyManager.notify(id, mBuilder.build());
-			super.onPreExecute();
-		}
-
-		@Override
-		protected void onProgressUpdate(Integer... values) {
-			// TODO Auto-generated method stub
-			mBuilder.setProgress(100, values[0], false);
-			mNotifyManager.notify(id, mBuilder.build());
-			super.onProgressUpdate(values);
-		}
+		
 
 		@Override
 		protected Object doInBackground(Object... params) {
@@ -95,7 +79,6 @@ public class AlarmDownloadService extends BroadcastReceiver {
 						e.printStackTrace();
 					}
 				}
-				publishProgress(Math.min(2, 100));
 			}
 
 			return null;
@@ -103,11 +86,7 @@ public class AlarmDownloadService extends BroadcastReceiver {
 
 		@Override
 		protected void onPostExecute(Object result) {
-			// TODO Auto-generated method stub
-			mBuilder.setContentText("Download complete");
-			// Removes the progress bar
-			mBuilder.setProgress(0, 0, false);
-			mNotifyManager.notify(id, mBuilder.build());
+			
 			Log.i("Download", "Complete");
 			// new FetchingData(null).execute();
 			super.onPostExecute(result);

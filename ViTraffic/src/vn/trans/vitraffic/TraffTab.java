@@ -4,15 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.xmlpull.v1.XmlPullParserException;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -27,13 +25,10 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.maps.android.kml.KmlLayer;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -50,8 +45,6 @@ public class TraffTab extends FragmentActivity
 	GoogleApiClient mGoogleApiClient;
 	boolean mRequestingLocationUpdates = true;
 	boolean init = true;
-	private Handler handler;
-	private static PolylineOptions pol = new PolylineOptions();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -62,13 +55,11 @@ public class TraffTab extends FragmentActivity
 		// webSettings.setJavaScriptEnabled(true);
 		// myWebView.loadUrl("http://vitraffic-byethost.rhcloud.com/traffic/map.html");
 		mRequestingLocationUpdates = true;
-		handler = new Handler();
 		initilizeMap();
 		buildGoogleApiClient();
 		createLocationRequest();
 		init = true;
 
-		 new LoadTraffic().execute();
 		// map.addPolyline(pol).setVisible(true);
 	}
 
@@ -112,6 +103,49 @@ public class TraffTab extends FragmentActivity
 
 	}
 
+	public void GetTrafficUpdate() {
+		// RequestQueue mQueue = Volley.newRequestQueue(this);
+		// String url = IURLConst.URL_GET_TRAFFIC ;
+		// StringRequest jsReq = new StringRequest(Request.Method.GET, url, new
+		// Listener<String>() {
+		//
+		// @Override
+		// public void onResponse(String arg0) {
+		// // TODO Auto-generated method stub
+		// Log.i("Traffic", "Update data " + arg0);
+		// }
+		// }, new ErrorListener() {
+		//
+		// @Override
+		// public void onErrorResponse(VolleyError arg0) {
+		// // TODO Auto-generated method stub
+		// Log.i("Traffic", "Update Error :" + arg0.getMessage());
+		// }
+		// });
+		// mQueue.add(jsReq);
+		String url = IURLConst.URL_GET_TRAFFIC;
+		URL obj;
+		try {
+			obj = new URL(url);
+			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+			// optional default is GET
+			con.setRequestMethod("GET");
+
+			// add request header
+
+			int responseCode = con.getResponseCode();
+			Log.i("Traffic", "Update data :" + responseCode);
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+
 	@Override
 	protected void onResume() {
 		// TODO Auto-generated method stub
@@ -122,8 +156,9 @@ public class TraffTab extends FragmentActivity
 		if (mGoogleApiClient.isConnected() && mRequestingLocationUpdates) {
 			startLocationUpdates();
 		}
-
-		
+		// new LoadTraffic().execute((Void) null);
+		new LoadTraffic().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void) null);
+		// loadTrafficLayer();
 		super.onResume();
 	}
 
@@ -272,39 +307,84 @@ public class TraffTab extends FragmentActivity
 
 	public void loadTrafficLayer() {
 
-		// TODO Auto-generated method stub
-		for (int i = 1; i <= IURLConst.NUM_FILES; i++) {
-			File kml = new File(IConstants.ROOT_PATH + "/map" + i + ".kml");
-			if (kml.exists()) {
-				try {
-					KmlLayer layer = new KmlLayer(map, new FileInputStream(kml), getApplicationContext());
-					layer.addLayerToMap();
-				} catch (FileNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (XmlPullParserException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+		File fmap = null;
+		for (int i = 1; (fmap = new File(IConstants.ROOT_PATH + "/map" + i + ".json")).exists(); i++) {
+			// for (int i=80 ; i<=IURLConst.NUM_FILES ; i++){
+			Log.i("LoadTraff", i + "");
+			// fmap = new File(IConstants.ROOT_PATH + "/traffic" + i + ".json");
+			try {
+				String jsonStr = IOUtils.toString(new FileInputStream(fmap));
+				List<Road> roads = new ArrayList<Road>();
+				roads = Road.conv2Object(jsonStr);
+				for (Road road : roads) {
+					DrawTrafficRoad(road);
 				}
-
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
+
 		}
 
 	}
 
-	public static class LoadTraffic extends AsyncTask<Object, Road, Object> {
+	public static class LoadTraffic extends AsyncTask<Void, Road, Void> {
+		public void GetTrafficUpdate() {
+			// RequestQueue mQueue = Volley.newRequestQueue(this);
+			// String url = IURLConst.URL_GET_TRAFFIC ;
+			// StringRequest jsReq = new StringRequest(Request.Method.GET, url, new
+			// Listener<String>() {
+			//
+			// @Override
+			// public void onResponse(String arg0) {
+			// // TODO Auto-generated method stub
+			// Log.i("Traffic", "Update data " + arg0);
+			// }
+			// }, new ErrorListener() {
+			//
+			// @Override
+			// public void onErrorResponse(VolleyError arg0) {
+			// // TODO Auto-generated method stub
+			// Log.i("Traffic", "Update Error :" + arg0.getMessage());
+			// }
+			// });
+			// mQueue.add(jsReq);
+			String url = IURLConst.URL_GET_TRAFFIC;
+			URL obj;
+			try {
+				obj = new URL(url);
+				HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
+				// optional default is GET
+				con.setRequestMethod("GET");
+
+				// add request header
+
+				int responseCode = con.getResponseCode();
+				Log.i("Traffic", "Update data :" + responseCode);
+			} catch (MalformedURLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
 		@Override
-		protected Object doInBackground(Object... params) {
+		protected Void doInBackground(Void... param) {
 			// TODO Auto-generated method stub
+			android.os.Debug.waitForDebugger();
+			GetTrafficUpdate();
 			File fmap = null;
 			for (int i = 1; (fmap = new File(IConstants.ROOT_PATH + "/map" + i + ".json")).exists(); i++) {
-			//for (int i=80 ; i<=IURLConst.NUM_FILES ; i++){
-				Log.i("LoadTraff", i+"");
-//				fmap = new File(IConstants.ROOT_PATH + "/traffic" + i + ".json");
+				// for (int i=80 ; i<=IURLConst.NUM_FILES ; i++){
+				Log.i("LoadTraff", i + "");
+				// fmap = new File(IConstants.ROOT_PATH + "/traffic" + i +
+				// ".json");
 				try {
 					String jsonStr = IOUtils.toString(new FileInputStream(fmap));
 					List<Road> roads = new ArrayList<Road>();
@@ -322,7 +402,6 @@ public class TraffTab extends FragmentActivity
 
 			}
 
-			
 			return null;
 		}
 

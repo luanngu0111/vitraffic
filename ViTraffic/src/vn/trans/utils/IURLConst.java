@@ -3,6 +3,7 @@ package vn.trans.utils;
 public interface IURLConst {
 	public static String URL_FIND_WAY = "http://vitraffic-byethost.rhcloud.com/find_way.php";
 	public static String URL_TRAFFIC = "http://vitraffic-byethost.rhcloud.com/traffic";
+	public static String URL_GET_TRAFFIC = "http://vitraffic-byethost.rhcloud.com/traffic/get_traffic.php";
 	public static String URL_NEAREST_NODE = "http://vitraffic-byethost.rhcloud.com/find_node_nearest.php";
 	public static String URL_UPDATE_TRAFF = "http://vitraffic-byethost.rhcloud.com/update_traffic.php";
 	public static String URL_FAST_PATH = "http://vitraffic-byethost.rhcloud.com/fastest_path.php";
