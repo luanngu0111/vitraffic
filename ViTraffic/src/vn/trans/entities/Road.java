@@ -1,5 +1,6 @@
 package vn.trans.entities;
 
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,16 +19,32 @@ import vn.trans.direction.Vertex;
 import vn.trans.json.JSONObj;
 import vn.trans.utils.IURLConst;
 
-public class Road {
+public class Road implements Comparable<Road> {
 	String id_start;
 	String id_end;
 	LatLng pos_start;
 	LatLng pos_end;
 	int amount;
 	double avg_speed;
+	String timestamps;
 	String color;
+	int direct;
 
-	
+	public String getTimestamps() {
+		return timestamps;
+	}
+
+	public void setTimestamps(String timestamps) {
+		this.timestamps = timestamps;
+	}
+
+	public int getDirect() {
+		return direct;
+	}
+
+	public void setDirect(int direct) {
+		this.direct = direct;
+	}
 
 	public String getId_start() {
 		return id_start;
@@ -89,12 +106,9 @@ public class Road {
 		// TODO Auto-generated constructor stub
 	}
 
-	
-
-	
 	public static List<Road> conv2Object(String jsonStr) {
 		// TODO Auto-generated method stub
-		List<Road> roads = new ArrayList<Road>(); 
+		List<Road> roads = new ArrayList<Road>();
 		// Loop result to put vertex (nodes) value (id, name, coord)
 		try {
 			JSONObject json = new JSONObject(jsonStr);
@@ -104,14 +118,17 @@ public class Road {
 				for (int i = 0; i < traff_arr.length(); i++) {
 					JSONObject w = traff_arr.getJSONObject(i);
 					Road r = new Road();
-					r.setId_start(w.getString(IURLConst.TAG_START));
-					r.setId_end(w.getString(IURLConst.TAG_END));
-					r.setPos_start(new LatLng(w.getDouble(IURLConst.TAG_START_LAT),
-							w.getDouble(IURLConst.TAG_START_LON)));
-					r.setPos_end(new LatLng(w.getDouble(IURLConst.TAG_END_LAT), w.getDouble(IURLConst.TAG_END_LON)));
+					// r.setId_start(w.getString(IURLConst.TAG_START));
+					// r.setId_end(w.getString(IURLConst.TAG_END));
+					// r.setPos_start(
+					// new LatLng(w.getDouble(IURLConst.TAG_START_LAT),
+					// w.getDouble(IURLConst.TAG_START_LON)));
+					r.setPos_end(new LatLng(w.getDouble(IURLConst.TAG_LAT), w.getDouble(IURLConst.TAG_LON)));
 					r.setAvg_speed(w.getDouble(IURLConst.TAG_AVG_SPEED));
 					r.setAmount(w.getInt(IURLConst.TAG_AMOUNT));
 					r.setColor(w.getString(IURLConst.TAG_COLOR));
+					r.setTimestamps(w.getString(IURLConst.TAG_TIME));
+					r.setDirect(w.getInt(IURLConst.TAG_DIRECT));
 					roads.add(r);
 				}
 			}
@@ -120,6 +137,51 @@ public class Road {
 			e.printStackTrace();
 		}
 		return roads;
+	}
+	
+	public static List<Road> conv2Object(JSONObject jsonObject) {
+		// TODO Auto-generated method stub
+		List<Road> roads = new ArrayList<Road>();
+		// Loop result to put vertex (nodes) value (id, name, coord)
+		try {
+			JSONObject json = jsonObject;
+			int success = 1;// json.getInt(IURLConst.TAG_SUCCESS);
+			if (success == 1) {
+				JSONArray traff_arr = json.getJSONArray(IURLConst.TAG_TRAFFIC);
+				for (int i = 0; i < traff_arr.length(); i++) {
+					JSONObject w = traff_arr.getJSONObject(i);
+					Road r = new Road();
+					// r.setId_start(w.getString(IURLConst.TAG_START));
+					// r.setId_end(w.getString(IURLConst.TAG_END));
+					// r.setPos_start(
+					// new LatLng(w.getDouble(IURLConst.TAG_START_LAT),
+					// w.getDouble(IURLConst.TAG_START_LON)));
+					r.setPos_end(new LatLng(w.getDouble(IURLConst.TAG_LAT), w.getDouble(IURLConst.TAG_LON)));
+					r.setAvg_speed(w.getDouble(IURLConst.TAG_AVG_SPEED));
+					r.setAmount(w.getInt(IURLConst.TAG_AMOUNT));
+					r.setColor(w.getString(IURLConst.TAG_COLOR));
+					r.setTimestamps(w.getString(IURLConst.TAG_TIME));
+					r.setDirect(w.getInt(IURLConst.TAG_DIRECT));
+					roads.add(r);
+				}
+			}
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return roads;
+	}
+
+	@Override
+	public int compareTo(Road another) {
+		// TODO Auto-generated method stub
+		int val1 = this.timestamps.compareTo(another.timestamps);
+		int val2 = this.direct - another.direct;
+		if (this.direct < another.direct)
+			return -1;
+		if (this.direct > another.direct)
+			return 1;
+		return val1;
 	}
 
 }

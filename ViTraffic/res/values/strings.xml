@@ -9,5 +9,6 @@
     <string name="google_maps_key_api">AIzaSyBKDfFx7v83ITF4-bbmYaJedXUgYEcTKcs</string>
     <string name="title_activity_tracker_tab">TrackerTab</string>
     <string name="title_activity_direction_tab">DirectionTab</string>
+    <string name="title_activity_direct_tab">DirectTab</string>
 
 </resources>

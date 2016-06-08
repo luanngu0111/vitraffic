@@ -46,7 +46,7 @@ public class MainActivity extends TabActivity {
 
 		// Tab for Direction
 		TabSpec dirSpec = tabHost.newTabSpec("direct");
-		Intent dirIntent = new Intent(this, DirectionTab.class);
+		Intent dirIntent = new Intent(this, DirectTab.class);
 		dirSpec.setIndicator("Direction");
 		dirSpec.setContent(dirIntent);
 
@@ -55,16 +55,18 @@ public class MainActivity extends TabActivity {
 		tabHost.addTab(traffSpec);
 		tabHost.addTab(dirSpec);
 
-		Intent launchIntent = new Intent(this, AlarmDownloadService.class);
-		mAlarmIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, launchIntent, 0);
+		// Intent launchIntent = new Intent(this, AlarmDownloadService.class);
+		// mAlarmIntent = PendingIntent.getBroadcast(getApplicationContext(), 0,
+		// launchIntent, 0);
 	}
 
 	@Override
 	protected void onResume() {
 		// TODO Auto-generated method stub
-		alarmMan = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-		alarmMan.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 2000,
-				IConstants.ALARM_INTERVAL, mAlarmIntent);
+		// alarmMan = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+		// alarmMan.setRepeating(AlarmManager.ELAPSED_REALTIME,
+		// SystemClock.elapsedRealtime() + 2000,
+		// IConstants.ALARM_INTERVAL, mAlarmIntent);
 		super.onResume();
 	}
 
@@ -87,7 +89,10 @@ public class MainActivity extends TabActivity {
 		Intent cancelIntent = new Intent(this, AlarmDownloadService.class);
 		cancelIntent.putExtra("cancel", "cancel");
 		mAlarmIntent = PendingIntent.getBroadcast(this, 0, cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-		alarmMan.cancel(mAlarmIntent);
+		mAlarmIntent.cancel();
+//		if (mAlarmIntent != null) {
+//			alarmMan.cancel(mAlarmIntent);
+//		}
 		super.onStop();
 	}
 

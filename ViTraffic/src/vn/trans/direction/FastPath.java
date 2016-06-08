@@ -33,7 +33,6 @@ public class FastPath {
 	private final DefaultDirectedWeightedGraph<Vertex, DefaultWeightedEdge> graph;
 	private static FastPath object;
 
-	
 	private FastPath() {
 		graph = new DefaultDirectedWeightedGraph<Vertex, DefaultWeightedEdge>(DefaultWeightedEdge.class);
 		nodes = new HashMap<String, Vertex>();
@@ -73,7 +72,7 @@ public class FastPath {
 								w.getDouble(IURLConst.TAG_START_LON));
 						end_loc = new LatLng(w.getDouble(IURLConst.TAG_END_LAT), w.getDouble(IURLConst.TAG_END_LON));
 						avg_speed = w.getDouble(IURLConst.TAG_AVG_SPEED);
-						//w.getInt(IURLConst.TAG_AMOUNT);
+						// w.getInt(IURLConst.TAG_AMOUNT);
 						Vertex start_vertex = new Vertex(start, "Node_" + start, start_loc);
 						Vertex end_vertex = new Vertex(end, "Node_" + end, end_loc);
 						if (!nodes.containsKey(end)) {
@@ -84,7 +83,7 @@ public class FastPath {
 							nodes.put(start, start_vertex);
 							graph.addVertex(start_vertex);
 						}
-						Log.e("fetching", j+ " "+ start + " " + end);
+						Log.e("fetching", j + " " + start + " " + end);
 						DefaultWeightedEdge edge = graph.addEdge(start_vertex, end_vertex);
 						graph.setEdgeWeight(edge, avg_speed);
 
@@ -92,7 +91,7 @@ public class FastPath {
 				}
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block
-				Log.e("fetching", "traffic id file "+j+" "+e.getMessage());
+				Log.e("fetching", "traffic id file " + j + " " + e.getMessage());
 			}
 		}
 	}
@@ -106,7 +105,7 @@ public class FastPath {
 	}
 
 	public List<LatLng> getFastPath(LatLng src, LatLng dest) {
-		
+
 		// find nearest src nodes nodes.lat < src.lat && nodes.lon <src.lon
 		String start_node = getNearestLoc(src);
 		// find nearest dest nodes nodeslat < dest.lat && nodes.lon <dest.lon
@@ -131,7 +130,9 @@ public class FastPath {
 	public static String getNearestLoc(LatLng src) {
 		String node_id = null;
 		try {
-			node_id = new NearestNode().execute(new Double[]{ src.latitude, src.longitude }).get();
+			node_id = new NearestNode()
+					.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Double[] { src.latitude, src.longitude })
+					.get();
 
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block

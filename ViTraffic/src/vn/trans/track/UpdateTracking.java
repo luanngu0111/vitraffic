@@ -43,7 +43,6 @@ public class UpdateTracking extends AsyncTask<Object, String, String> {
 		List<NameValuePair> params = new ArrayList<NameValuePair>();
 		params.add(new BasicNameValuePair("lat", String.valueOf(position.latitude)));
 		params.add(new BasicNameValuePair("lon", String.valueOf(position.longitude)));
-
 		JSONObject json = jParser.makeHttpRequest(IURLConst.URL_FIND_WAY, "GET", params);
 		double avg_speed = 0.0;
 		String start = "", end = "";

@@ -1,24 +1,24 @@
 package vn.trans.vitraffic;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import org.json.JSONException;
-import org.json.JSONObject;
+import java.util.Locale;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
+import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.JsonRequest;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
@@ -30,19 +30,17 @@ import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -50,13 +48,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
-import vn.trans.track.AlarmUploadService;
 import vn.trans.track.RequestTrack;
+import vn.trans.track.RequestUpdateTrack;
 import vn.trans.track.ResponseTrack;
-import vn.trans.track.UpdateTracking;
 import vn.trans.utils.IConstants;
 import vn.trans.utils.IURLConst;
-import com.android.volley.Response.ErrorListener;
 
 public class TrackTab extends FragmentActivity
 		implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener {
@@ -65,7 +61,10 @@ public class TrackTab extends FragmentActivity
 	private static final String LOCATION_KEY = "Location Key";
 	private static final String PREV_LOCATION_KEY = "Previous Location Key";
 	private static final String LAST_UPDATED_TIME_STRING_KEY = "Last Update Time";
+	private static final String INIT_KEY = "Init";
+	private static final String TRACKING_KEY = "Tracking";
 	private GoogleMap map;
+	private static int COEF = 0; // he so
 
 	private static Location mCurrentLocation;
 	private static Location mPrevLocation = null;
@@ -92,23 +91,33 @@ public class TrackTab extends FragmentActivity
 		bnStart = (Button) findViewById(R.id.bnStart);
 		bnStop = (Button) findViewById(R.id.bnStop);
 		bnDetail = (Button) findViewById(R.id.bnDetail);
+		final MarkerOptions options = new MarkerOptions();
+		
+		
 		bnStart.setOnClickListener(new View.OnClickListener() {
 
 			@Override
 			public void onClick(View arg0) {
+				options.position(new LatLng(mCurrentLocation.getLatitude(),mCurrentLocation.getLongitude()));
+				options.icon(BitmapDescriptorFactory.fromResource(R.drawable.start_blue));
+				map.addMarker(options);
 				Toast.makeText(getApplicationContext(), "Start Tracking ...", Toast.LENGTH_LONG).show();
 				bnStop.setEnabled(true);
 				bnStart.setEnabled(false);
+				mRequestingLocationUpdates = true;
 				mTracking = true;
 				startLocationUpdates();
 			}
 		});
-
+		init = true;
 		bnStop.setEnabled(false);
 		bnStop.setOnClickListener(new View.OnClickListener() {
 
 			@Override
 			public void onClick(View v) {
+				options.position(new LatLng(mCurrentLocation.getLatitude(),mCurrentLocation.getLongitude()));
+				options.icon(BitmapDescriptorFactory.fromResource(R.drawable.end_green));
+				map.addMarker(options);
 				Toast.makeText(getApplicationContext(), "Stop Tracking !", Toast.LENGTH_LONG).show();
 				bnStop.setEnabled(false);
 				bnStart.setEnabled(true);
@@ -126,8 +135,8 @@ public class TrackTab extends FragmentActivity
 				if (mTracking) {
 					getDetailInfo();
 				} else {
-					dialog.setTitle("Thông Tin Hành Trình");
-					dialog.setMessage("Vui lòng bật chế độ ghi hành trình !");
+					dialog.setTitle("Trip Information");
+					dialog.setMessage("Please turn on Tracking Mode !");
 					AlertDialog alert = dialog.create();
 					alert.show();
 				}
@@ -135,14 +144,6 @@ public class TrackTab extends FragmentActivity
 		});
 		// updateValuesFromBundle(savedInstanceState);
 
-	}
-
-	@Override
-	protected void onStart() {
-		// TODO Auto-generated method stub
-		mGoogleApiClient.connect();
-		init = true;
-		super.onStart();
 	}
 
 	@Override
@@ -171,6 +172,14 @@ public class TrackTab extends FragmentActivity
 			// the UI.
 			if (savedInstanceState.keySet().contains(LAST_UPDATED_TIME_STRING_KEY)) {
 				mLastUpdateTime = savedInstanceState.getString(LAST_UPDATED_TIME_STRING_KEY);
+			}
+
+			if (savedInstanceState.keySet().contains(INIT_KEY)) {
+				init = savedInstanceState.getBoolean(INIT_KEY);
+			}
+
+			if (savedInstanceState.keySet().contains(TRACKING_KEY)) {
+				mTracking = savedInstanceState.getBoolean(TRACKING_KEY);
 			}
 			LatLng prev = new LatLng(mPrevLocation.getLatitude(), mPrevLocation.getLongitude());
 			updateUI(prev);
@@ -205,9 +214,9 @@ public class TrackTab extends FragmentActivity
 		double avgSpeed = mDistance / hours;
 		String stime = hour + ":" + minute + ":" + second;
 		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-		dialog.setTitle("Thông Tin Hành Trình");
-		dialog.setMessage("Tổng quãng đường: " + Math.round(mDistance * 1000) / 1000.0 + "(km) \nTổng thời gian: "
-				+ stime + "\nVận tốc: " + Math.round(avgSpeed * 1000) / 1000.0 + "(km/h)");
+		dialog.setTitle("Trip Information");
+		dialog.setMessage("Total Distance : " + Math.round(mDistance * 1000) / 1000.0 + "(km) \nTotal time : "
+				+ stime + "\nSpeed : " + Math.round(avgSpeed * 1000) / 1000.0 + "(km/h)");
 		AlertDialog alert = dialog.create();
 		alert.show();
 	}
@@ -281,8 +290,11 @@ public class TrackTab extends FragmentActivity
 		map.setMyLocationEnabled(true);
 		map.getUiSettings().setZoomControlsEnabled(true);
 
-		map.animateCamera(CameraUpdateFactory.zoomTo(10), 2000, null);
-		map.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(106, 10)));
+		CameraUpdate center = CameraUpdateFactory.newLatLng(new LatLng(10.7804, 106.6896));
+		CameraUpdate zoom = CameraUpdateFactory.zoomTo(15);
+
+		map.moveCamera(center);
+		map.animateCamera(zoom);
 
 		// check if map is created successfully or not
 		if (map == null) {
@@ -296,13 +308,11 @@ public class TrackTab extends FragmentActivity
 		// TODO Auto-generated method stub
 		if (mGoogleApiClient.isConnected()) {
 			stopLocationUpdates();
+			mRequestingLocationUpdates = false;
+			mTracking = false;
+			mPrevLocation = null;
 			mGoogleApiClient.disconnect();
 		}
-
-		mRequestingLocationUpdates = false;
-		mTracking = false;
-		mPrevLocation = null;
-
 		super.onBackPressed();
 	}
 
@@ -312,13 +322,14 @@ public class TrackTab extends FragmentActivity
 	@Override
 	public void onLocationChanged(Location location) {
 		// TODO Auto-generated method stub
+		CameraPosition camPos = new CameraPosition.Builder()
+				.target(new LatLng(location.getLatitude(), location.getLongitude())).zoom(15)
+				.bearing(location.getBearing()).build();
+		CameraUpdate camUpd3 = CameraUpdateFactory.newCameraPosition(camPos);
+		map.animateCamera(camUpd3);
 		if (mPrevLocation == null) {
 			mPrevLocation = location;
-			CameraPosition camPos = new CameraPosition.Builder()
-					.target(new LatLng(location.getLatitude(), location.getLongitude())).zoom(15)
-					.bearing(location.getBearing()).build();
-			CameraUpdate camUpd3 = CameraUpdateFactory.newCameraPosition(camPos);
-			map.animateCamera(camUpd3);
+
 		}
 		if (mStartLocation == null) {
 			mStartLocation = location;
@@ -331,7 +342,7 @@ public class TrackTab extends FragmentActivity
 		Log.v("point", location.getLongitude() + " " + location.getLatitude());
 		if (mTracking)
 			updateUI(prev);
-
+		mPrevLocation = location;
 	}
 
 	/**
@@ -348,26 +359,43 @@ public class TrackTab extends FragmentActivity
 		rq.RoadRequest(new LatLng[] { start, end });
 		LatLng[] paths = rp.getPathsRp();
 
+		COEF = rp.getCoef();
+		Log.i("Track", "COEF:" + COEF);
 		if (paths != null) {
+
+			TrackUpdate(start, paths[0], mCurrSpeed * 3.6, COEF * IConstants.SUB_COEF);
 			Log.v("path", String.valueOf(paths.length));
 			for (int i = 1; i < paths.length; i++) {
 				start = paths[i - 1];
 				end = paths[i];
-				Log.v("points", String.format("(%f; %f)  (%f; %f)", end.latitude, end.longitude, paths[i].latitude,
-						paths[i].longitude));
+				Log.v("points", String.format("(%f; %f)", end.latitude, end.longitude));
 
-				List<LatLng> point = new ArrayList<LatLng>();
-				PolylineOptions po = new PolylineOptions();
-				po.addAll(point);
+				// List<LatLng> point = new ArrayList<LatLng>();
+				// PolylineOptions po = new PolylineOptions();
+				// po.addAll(point);
+
+				// if (neg) {
+				// sideStart = new LatLng(start.latitude, start.longitude -
+				// IConstants.AUT_LONG);
+				// sideEnd = new LatLng(end.latitude, end.longitude -
+				// IConstants.AUT_LONG);
+				// } else {
+				// sideStart = new LatLng(start.latitude, start.longitude +
+				// IConstants.AUT_LONG);
+				// sideEnd = new LatLng(end.latitude, end.longitude +
+				// IConstants.AUT_LONG);
+				// }
 				Polyline line = map.addPolyline(new PolylineOptions().add(start, end).width(8).color(0xff0000ff));
 				line.setVisible(true);
+				TrackUpdate(start, end, mCurrSpeed * 3.6, COEF * 100 + i);
 			}
 
 			end = paths[paths.length - 1];
-			WriteToFile(paths, mPlace);
-			mPrevLocation = mCurrentLocation;
-			mPrevLocation.setLatitude(end.latitude);
-			mPrevLocation.setLongitude(end.longitude);
+			// TrackUpdate(paths[0], end, mCurrSpeed * 3.6);
+			// WriteToFile(paths, mPlace);
+			// mPrevLocation = mCurrentLocation;
+			// mPrevLocation.setLatitude(end.latitude);
+			// mPrevLocation.setLongitude(end.longitude);
 
 		}
 	}
@@ -384,7 +412,6 @@ public class TrackTab extends FragmentActivity
 		LatLng curr = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
 		if (paths != null) {
 			loc.setArr_coord(Arrays.asList(paths));
-			// curr = paths[paths.length-1];
 		}
 		long totalTime = mCurrentLocation.getTime() - mPrevLocation.getTime();
 		double hours = totalTime / 3600000.0;
@@ -392,7 +419,9 @@ public class TrackTab extends FragmentActivity
 		loc.setDistance(distance);
 		Log.i("speed", mCurrSpeed * 3.6 + "");
 		// new UpdateTracking().execute(curr, mCurrSpeed * 3.6);
-		TrackUpdate(curr, mCurrSpeed * 3.6);
+		// LatLng prev = new LatLng(mPrevLocation.getLatitude(),
+		// mPrevLocation.getLongitude());
+		// TrackUpdate(prev, curr, mCurrSpeed * 3.6);
 		// loc.setSpeed(mCurrSpeed * 3.6);
 		// loc.setCoord(curr);
 		// loc.setUser_id(android.os.Build.SERIAL);
@@ -400,86 +429,81 @@ public class TrackTab extends FragmentActivity
 		// loc.saveToDb(curr, mCurrSpeed * 3.6);
 	}
 
-	private static RequestQueue mQueue;
+	public void TrackUpdate(LatLng prev, LatLng curr, double speed, int pos) {
 
-	public void TrackUpdate(LatLng curr, final double speed) {
-		mQueue = Volley.newRequestQueue(this);
+		@SuppressWarnings("unused")
+		int direct = 0;
 
-		String addr = String.format(IURLConst.URL_FIND_WAY + "?lat=%s&lon=%s", String.valueOf(curr.latitude),
-				String.valueOf(curr.longitude));
-		Log.v("url", addr);
+		String addr = String.format(IURLConst.URL_UPDATE_TRAFF + "?lat=%s&lon=%s&speed=%s&direct=%s",
+				String.format(Locale.ENGLISH, "%f", curr.latitude), String.format(Locale.ENGLISH, "%f", curr.longitude),
+				String.valueOf(speed), String.valueOf(pos));
+
+		Log.v("url_req", addr);
 
 		StringRequest strRequest = new StringRequest(Request.Method.GET, addr, new Listener<String>() {
 
 			@Override
 			public void onResponse(String arg0) {
 				// TODO Auto-generated method stub
-				double avg_speed = 0.0;
-				String start = "", end = "";
-				int amount = 0;
-
-				try {
-					JSONObject json = new JSONObject(arg0);
-					Log.i("Track", json.toString());
-					int success = json.getInt(IURLConst.TAG_SUCCESS);
-					if (success == 1) {
-						JSONObject w = json.getJSONObject(IURLConst.TAG_WAY);
-						start = w.getString(IURLConst.TAG_START);
-						end = w.getString(IURLConst.TAG_END);
-						avg_speed = w.getDouble(IURLConst.TAG_AVG_SPEED);
-						amount = w.getInt(IURLConst.TAG_AMOUNT);
-						avg_speed = (avg_speed * amount + speed) / (++amount) * 1.0;
-					}
-					UpdateRequest(start, end, avg_speed, amount);
-				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				Log.i("Track", arg0.toString());
 
 			}
 		}, new ErrorListener() {
 			@Override
 			public void onErrorResponse(VolleyError arg0) {
 				// TODO Auto-generated method stub
-				Log.v("Track", arg0.toString());
+				Log.i("Track", arg0.toString());
 			}
 		});
-		mQueue.add(strRequest);
+
+		RequestUpdateTrack.getInstance(getApplicationContext()).addToRequestQueue(strRequest);
+	}
+	
+	public void TrackingUpdate(LatLng prev, LatLng curr, double speed, int pos){
+		String url =  String.format(IURLConst.URL_UPDATE_TRAFF + "?lat=%s&lon=%s&speed=%s&direct=%s",
+				String.format(Locale.ENGLISH, "%f", curr.latitude), String.format(Locale.ENGLISH, "%f", curr.longitude),
+				String.valueOf(speed), String.valueOf(pos));
+		URL obj;
+		try {
+			obj = new URL(url);
+			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+			// optional default is GET
+			con.setRequestMethod("GET");
+
+			// add request header
+
+			int responseCode = con.getResponseCode();
+			Log.i("Tracking", "Update data :" + responseCode);
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
-	private String getColor(double speed) {
-		if (speed >= 0 && speed < 5)
-			return IConstants.COLOR_RED;
-		if (speed >= 5 && speed < 15)
-			return IConstants.COLOR_ORANGE;
-		if (speed >= 15 && speed < 30)
-			return IConstants.COLOR_BLUE;
-
-		return IConstants.COLOR_GREEN;
-	}
-
-	public void UpdateRequest(String start, String end, double avg_speed, int amount) {
-		
-		String color = getColor(avg_speed);
-		String url = String.format(IURLConst.URL_UPDATE_TRAFF + "?start=%s&end=%s&speed=%s&amount=%d&color=%s", start,
-				end, String.valueOf(avg_speed), amount, color);
-		StringRequest jsReq = new StringRequest(Request.Method.GET, url, new Listener<String>() {
-
-			@Override
-			public void onResponse(String arg0) {
-				// TODO Auto-generated method stub
-				Log.i("Track", "Update " + arg0);
-			}
-		}, new ErrorListener() {
-
-			@Override
-			public void onErrorResponse(VolleyError arg0) {
-				// TODO Auto-generated method stub
-				Log.i("Track", "Update Error :" + arg0.getMessage());
-			}
-		});
-		mQueue.add(jsReq);
-	}
+	/*
+	 * public void UpdateRequest(String start, String end, double avg_speed, int
+	 * amount) {
+	 * 
+	 * String color = getColor(avg_speed); String url =
+	 * String.format(IURLConst.URL_UPDATE_TRAFF +
+	 * "?start=%s&end=%s&speed=%s&amount=%d&color=%s", start, end,
+	 * String.valueOf(avg_speed), amount, color); StringRequest jsReq = new
+	 * StringRequest(Request.Method.GET, url, new Listener<String>() {
+	 * 
+	 * @Override public void onResponse(String arg0) { // TODO Auto-generated
+	 * method stub Log.i("Track", "Update " + arg0); } }, new ErrorListener() {
+	 * 
+	 * @Override public void onErrorResponse(VolleyError arg0) { // TODO
+	 * Auto-generated method stub Log.i("Track", "Update Error :" +
+	 * arg0.getMessage()); } });
+	 * //RequestUpdateTrack.getInstance(getApplicationContext()).
+	 * addToRequestQueue(jsReq); }
+	 */
 
 	@Override
 	public void onConnectionFailed(ConnectionResult result) {
@@ -499,6 +523,7 @@ public class TrackTab extends FragmentActivity
 	// Dang ky gui request toa do vi tri cua user.
 	private void startLocationUpdates() {
 		// TODO Auto-generated method stub
+		init = false;
 		LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
 	}
 
@@ -517,35 +542,9 @@ public class TrackTab extends FragmentActivity
 		savedInstanceState.putParcelable(LOCATION_KEY, mCurrentLocation);
 		savedInstanceState.putParcelable(PREV_LOCATION_KEY, mPrevLocation);
 		savedInstanceState.putString(LAST_UPDATED_TIME_STRING_KEY, mLastUpdateTime);
+		savedInstanceState.putBoolean(INIT_KEY, init);
+		savedInstanceState.putBoolean(TRACKING_KEY, mTracking);
 		super.onSaveInstanceState(savedInstanceState);
-	}
-
-	private void updateValuesFromBundle(Bundle savedInstanceState) {
-		if (savedInstanceState != null) {
-			// Update the value of mRequestingLocationUpdates from the Bundle,
-			// and
-			// make sure that the Start Updates and Stop Updates buttons are
-			// correctly enabled or disabled.
-			if (savedInstanceState.keySet().contains(REQUESTING_LOCATION_UPDATES_KEY)) {
-				mRequestingLocationUpdates = savedInstanceState.getBoolean(REQUESTING_LOCATION_UPDATES_KEY);
-				// setButtonsEnabledState();
-			}
-
-			if (savedInstanceState.keySet().contains(LOCATION_KEY)) {
-
-				mCurrentLocation = savedInstanceState.getParcelable(LOCATION_KEY);
-			}
-			if (savedInstanceState.keySet().contains(PREV_LOCATION_KEY)) {
-
-				mPrevLocation = savedInstanceState.getParcelable(PREV_LOCATION_KEY);
-			}
-			// Update the value of mLastUpdateTime from the Bundle and update
-			// the UI.
-			if (savedInstanceState.keySet().contains(LAST_UPDATED_TIME_STRING_KEY)) {
-				mLastUpdateTime = savedInstanceState.getString(LAST_UPDATED_TIME_STRING_KEY);
-			}
-
-		}
 	}
 
 }

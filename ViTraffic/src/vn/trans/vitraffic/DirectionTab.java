@@ -11,11 +11,20 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.PlaceBuffer;
+import com.google.android.gms.location.places.Places;
+import com.google.android.gms.location.places.ui.PlaceAutocomplete;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -23,21 +32,28 @@ import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import android.content.Intent;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.Toast;
 import vn.trans.direction.FastPath;
+import vn.trans.direction.PlaceAutoCompleteAdapter;
 import vn.trans.json.JSONParser;
 import vn.trans.utils.IConstants;
 import vn.trans.utils.IURLConst;
@@ -46,12 +62,20 @@ public class DirectionTab extends FragmentActivity
 		implements ConnectionCallbacks, OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
 	private GoogleMap map;
 	private Button bnLoad, bnSwap, bnClear;
+	private AutoCompleteTextView txtStart, txtEnd;
 	private static LatLng[] directions = new LatLng[2];
 	private static int index = 0;
 	GoogleApiClient mGoogleApiClient;
 	boolean mRequestingLocationUpdates = true;
 	LocationRequest mLocationRequest;
 	boolean init = true;
+	PlacesDialog dialog = null;
+	PlaceAutoCompleteAdapter mAdapter;
+	LatLng start, end;
+
+	private static final String LOG_TAG = "places";
+	private static final LatLngBounds BOUNDS_HCM = new LatLngBounds(new LatLng(10.3676, 106.0304),
+			new LatLng(11.1784, 107.4257));
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -60,46 +84,174 @@ public class DirectionTab extends FragmentActivity
 		initilizeMap();
 		buildGoogleApiClient();
 		createLocationRequest();
-		bnLoad = (Button) findViewById(R.id.bnLoad);
-		bnLoad.setOnClickListener(new OnClickListener() {
+
+		txtStart = (AutoCompleteTextView) findViewById(R.id.start);
+		txtEnd = (AutoCompleteTextView) findViewById(R.id.end);
+
+		// bnLoad = (Button) findViewById(R.id.bnLoad);
+		// bnLoad.setOnClickListener(new OnClickListener() {
+		//
+		// @Override
+		// public void onClick(View v) {
+		// // TODO Auto-generated method stub
+		// // GetFastestPath2(directions[0], directions[1]);
+		// // showDialog(getBaseContext());
+		// // openAutocompleteActivity(REQUEST_START_PLACE);
+		// dialog = new PlacesDialog();
+		// FragmentTransaction ft = getFragmentManager().beginTransaction();
+		// dialog.show(ft, "dialog");
+		// }
+		// });
+		// bnSwap = (Button) findViewById(R.id.bnSwap);
+		// bnSwap.setOnClickListener(new OnClickListener() {
+		//
+		// @Override
+		// public void onClick(View arg0) {
+		// // TODO Auto-generated method stub
+		// LatLng tmp = directions[0];
+		// directions[0] = directions[1];
+		// directions[1] = tmp;
+		// }
+		// });
+		//
+		// bnClear = (Button) findViewById(R.id.bnClear);
+		// bnClear.setOnClickListener(new OnClickListener() {
+		//
+		// @Override
+		// public void onClick(View v) {
+		// // TODO Auto-generated method stub
+		// if (map != null) {
+		// map.clear();
+		// }
+		// index = 0;
+		//
+		// }
+		// });
+
+		mAdapter = new PlaceAutoCompleteAdapter(this, android.R.layout.simple_list_item_1, mGoogleApiClient, BOUNDS_HCM,
+				null);
+//		txtStart.setAdapter(mAdapter);
+//		txtEnd.setAdapter(mAdapter);
+
+		txtStart.setOnItemClickListener(new OnItemClickListener() {
 
 			@Override
-			public void onClick(View v) {
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				// TODO Auto-generated method stub
-				GetFastestPath2(directions[0], directions[1]);
+				final PlaceAutoCompleteAdapter.PlaceAutocomplete item = mAdapter.getItem(position);
+				final String placeId = String.valueOf(item.placeId);
+				Log.i(LOG_TAG, "Autocomplete item selected: " + item.description);
+
+				/*
+				 * Issue a request to the Places Geo Data API to retrieve a
+				 * Place object with additional details about the place.
+				 */
+				PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId);
+				placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
+					@Override
+					public void onResult(PlaceBuffer places) {
+						if (!places.getStatus().isSuccess()) {
+							// Request did not complete successfully
+							Log.e(LOG_TAG, "Place query did not complete. Error: " + places.getStatus().toString());
+							places.release();
+							return;
+						}
+						// Get the Place object from the buffer.
+						final Place place = places.get(0);
+
+						start = place.getLatLng();
+					}
+				});
 			}
 		});
-		bnSwap = (Button) findViewById(R.id.bnSwap);
-		bnSwap.setOnClickListener(new OnClickListener() {
+		
+		txtEnd.setOnItemClickListener(new OnItemClickListener() {
 
 			@Override
-			public void onClick(View arg0) {
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				// TODO Auto-generated method stub
-				LatLng tmp = directions[0];
-				directions[0] = directions[1];
-				directions[1] = tmp;
+				final PlaceAutoCompleteAdapter.PlaceAutocomplete item = mAdapter.getItem(position);
+				final String placeId = String.valueOf(item.placeId);
+				Log.i(LOG_TAG, "Autocomplete item selected: " + item.description);
+
+				/*
+				 * Issue a request to the Places Geo Data API to retrieve a
+				 * Place object with additional details about the place.
+				 */
+				PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(mGoogleApiClient, placeId);
+				placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
+					@Override
+					public void onResult(PlaceBuffer places) {
+						if (!places.getStatus().isSuccess()) {
+							// Request did not complete successfully
+							Log.e(LOG_TAG, "Place query did not complete. Error: " + places.getStatus().toString());
+							places.release();
+							return;
+						}
+						// Get the Place object from the buffer.
+						final Place place = places.get(0);
+
+						end = place.getLatLng();
+					}
+				});
 			}
 		});
+		
+		
+		/*
+        These text watchers set the start and end points to null because once there's
+        * a change after a value has been selected from the dropdown
+        * then the value has to reselected from dropdown to get
+        * the correct location.
+        * */
+        txtStart.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-		bnClear = (Button) findViewById(R.id.bnClear);
-		bnClear.setOnClickListener(new OnClickListener() {
+            }
 
-			@Override
-			public void onClick(View v) {
-				// TODO Auto-generated method stub
-				if (map != null) {
-					map.clear();
-				}
-				index = 0;
+            @Override
+            public void onTextChanged(CharSequence s, int startNum, int before, int count) {
+                if (start != null) {
+                    start = null;
+                }
+            }
 
-			}
-		});
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+
+        });
+
+        txtEnd.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+
+                if(end!=null)
+                {
+                    end=null;
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
 
 	}
 
 	protected synchronized void buildGoogleApiClient() {
 		mGoogleApiClient = new GoogleApiClient.Builder(this).addConnectionCallbacks(this)
-				.addOnConnectionFailedListener(this).addApi(LocationServices.API).build();
+				.addOnConnectionFailedListener(this).addApi(LocationServices.API).addApi(Places.GEO_DATA_API)
+				.addApi(Places.PLACE_DETECTION_API).build();
 	}
 
 	protected void createLocationRequest() {
@@ -142,6 +294,35 @@ public class DirectionTab extends FragmentActivity
 		// }
 	}
 
+	/*
+	 * Dialog chon dia diem tren ban do
+	 */
+	private void openAutocompleteActivity(int req_code) {
+		try {
+			// The autocomplete activity requires Google Play Services to be
+			// available. The intent
+			// builder checks this and throws an exception if it is not the
+			// case.
+			Intent intent = new PlaceAutocomplete.IntentBuilder(PlaceAutocomplete.MODE_FULLSCREEN).build(this);
+			startActivityForResult(intent, req_code);
+		} catch (GooglePlayServicesRepairableException e) {
+			// Indicates that Google Play Services is either not installed or
+			// not up to date. Prompt
+			// the user to correct the issue.
+			GoogleApiAvailability.getInstance().getErrorDialog(this, e.getConnectionStatusCode(), 0 /* requestCode */)
+					.show();
+		} catch (GooglePlayServicesNotAvailableException e) {
+			// Indicates that Google Play Services is not available and the
+			// problem is not easily
+			// resolvable.
+			String message = "Google Play Services is not available: "
+					+ GoogleApiAvailability.getInstance().getErrorString(e.errorCode);
+
+			Log.e("place", message);
+			Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+		}
+	}
+
 	private void displayResult(List<LatLng> points) {
 		if (points != null) {
 			PolylineOptions po = new PolylineOptions();
@@ -180,7 +361,8 @@ public class DirectionTab extends FragmentActivity
 		String end = FastPath.getNearestLoc(dest);
 		List<LatLng> points;
 		try {
-			points = new FindPath().execute(new String[] { start, end }).get();
+			points = new FindPath()
+					.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new Object[] { start, end, src, dest }).get();
 			displayResult(points);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
@@ -201,9 +383,17 @@ public class DirectionTab extends FragmentActivity
 			List<NameValuePair> param = new ArrayList<NameValuePair>();
 			param.add(new BasicNameValuePair("start", "Node_" + params[0].toString()));
 			param.add(new BasicNameValuePair("end", "Node_" + params[1].toString()));
+			param.add(new BasicNameValuePair("slat", String.valueOf(((LatLng) params[2]).latitude)));
+			param.add(new BasicNameValuePair("slon", String.valueOf(((LatLng) params[2]).longitude)));
 
+			param.add(new BasicNameValuePair("elat", String.valueOf(((LatLng) params[3]).latitude)));
+			param.add(new BasicNameValuePair("elon", String.valueOf(((LatLng) params[3]).longitude)));
 			JSONParser jParser = new JSONParser();
 			JSONObject json = jParser.makeHttpRequest(IURLConst.URL_FAST_PATH, "GET", param);
+			Log.i("fast", String.format(IURLConst.URL_FAST_PATH + "?start=%s&end=%s&slat=%s&slon=%s&elat=%s&elon=%s",
+					params[0].toString(), params[1].toString(), String.valueOf(((LatLng) params[2]).latitude),
+					String.valueOf(((LatLng) params[2]).longitude), String.valueOf(((LatLng) params[3]).latitude),
+					String.valueOf(((LatLng) params[3]).longitude)));
 			int success;
 			try {
 
@@ -261,6 +451,7 @@ public class DirectionTab extends FragmentActivity
 		if (mGoogleApiClient.isConnected() && mRequestingLocationUpdates) {
 			startLocationUpdates();
 		}
+
 		super.onResume();
 	}
 

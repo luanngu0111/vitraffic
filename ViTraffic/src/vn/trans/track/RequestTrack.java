@@ -12,6 +12,7 @@ import com.google.android.gms.maps.model.LatLng;
 import android.content.Context;
 import android.util.Log;
 import vn.trans.utils.IConstants;
+import vn.trans.utils.IURLConst;
 
 public class RequestTrack {
 	Context context;
@@ -43,6 +44,28 @@ public class RequestTrack {
 		sendRequest(IConstants.RQ_DIST, "json", param);
 	}
 
+	public void CoefRequest(){
+		RequestQueue queue = Volley.newRequestQueue(context);
+
+		String addr = IURLConst.URL_COEF_REQ+"?k=1";
+		Log.v("url", addr);
+		StringRequest strRequest = new StringRequest(Request.Method.GET, addr, new Listener<String>() {
+
+			@Override
+			public void onResponse(String arg0) {
+				// TODO Auto-generated method stub
+				ResponseTrack rp = ResponseTrack.createObj();
+				rp.setResponseCoef(arg0);
+			}
+		}, new ErrorListener() {
+			@Override
+			public void onErrorResponse(VolleyError arg0) {
+				// TODO Auto-generated method stub
+				Log.v("response", arg0.toString());
+			}
+		});
+		queue.add(strRequest);
+	}
 	public void sendRequest(String url, final String output, String param) {
 		RequestQueue queue = Volley.newRequestQueue(context);
 
